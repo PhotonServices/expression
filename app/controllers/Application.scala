@@ -6,6 +6,7 @@ import play.api.libs.json._
 import play.api.Play.current
 
 import actors.WebSocketRouterActor
+import actors.ClientMessage
 
 object Application extends Controller {
 
@@ -13,7 +14,7 @@ object Application extends Controller {
     Ok(views.html.index("Your new application is ready."))
   }
 
-  def socket = WebSocket.acceptWithActor[JsValue, JsValue] { request => out =>
+  def socket = WebSocket.acceptWithActor[ClientMessage, JsValue] { request => out =>
     WebSocketRouterActor.props(out)
   }
 
