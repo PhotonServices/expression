@@ -6,8 +6,8 @@ import play.api.libs.json._
 import play.api.Play.current
 
 import actors.WebSocketRouter
-import actors.ClientIn
-import actors.ClientOut
+import actors.WebSocketRouter.ClientIn
+import actors.WebSocketRouter.ClientOut
 
 object Application extends Controller {
 
