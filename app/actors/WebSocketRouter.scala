@@ -5,7 +5,6 @@
 package actors
 
 import akka.actor._
-import akka.actor.ActorLogging
 
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
@@ -40,7 +39,7 @@ object WebSocketRouter {
    * @param out actor which handles messages to the client. 
    * @return an ActorRef of WebSocketRouter. 
    */
-  def props(out: ActorRef) = Props(new WebSocketRouter(out))
+  def props(out: ActorRef, cardsManager: ActorRef) = Props(new WebSocketRouter(out, cardsManager))
 }
 
 /** Actor which enroutes messages and events from and to the client.
@@ -52,7 +51,7 @@ object WebSocketRouter {
  *
  * @constructor use the companion object method 'props'.
  */
-class WebSocketRouter (out: ActorRef) extends Actor with ActorLogging {
+class WebSocketRouter (out: ActorRef, cardsManager: ActorRef) extends Actor with ActorLogging {
 
   import WebSocketRouter.{ClientIn, ClientOut}
   import akka.contrib.pattern.DistributedPubSubExtension
@@ -67,13 +66,15 @@ class WebSocketRouter (out: ActorRef) extends Actor with ActorLogging {
   val mediator = DistributedPubSubExtension(context.system).mediator
 
   def receive = {
-    case ClientIn(path, message, content) => path match {
+    case msg @ ClientIn(path, message, content) => path match {
       case "/echo" => out ! ClientOut("echo", Json.obj(message -> content))
       case "/event-bus" => message match {
         case "subscribe" => mediator ! Subscribe(content, self)
         case "unsubscribe" => mediator ! Unsubscribe(content, self)
       }
-      case _ => mediator ! Send(path, message, false)
+      case _ => 
+        out ! ClientOut("echo", Json.obj(message -> content))
+        cardsManager ! msg
     }
 
     case SubscribeAck(Subscribe(event, _, `self`)) => log.info(event)
