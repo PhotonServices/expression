@@ -26,17 +26,4 @@ class SentimentCardsManager extends Actor with ActorLogging {
       case "card-new" => Actors.mediator ! Publish("card-new", ClientOut("card-new", Json.obj("name" -> content)))
     }
   }
-
-}
-
-object SentimentCard {
-  def props (): Props = Props(new SentimentCard)
-}
-
-class SentimentCard extends Actor {
-
-  def receive = {
-    case _ => 
-  }
-
 }
