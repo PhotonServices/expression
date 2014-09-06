@@ -11,24 +11,20 @@ object SentimentCardsManager {
 }
 
 class SentimentCardsManager extends Actor with ActorLogging {
-  
-  import play.api.libs.json._
-  import WebSocketRouter.{ClientIn, ClientOut}
-  import akka.contrib.pattern.DistributedPubSubExtension
-  import akka.contrib.pattern.DistributedPubSubMediator.Publish
+
   import scala.collection.mutable.Map
-
-
-  /** The mediator actor which handles publishings and subscriptions. */
-  val mediator = DistributedPubSubExtension(context.system).mediator
+  import play.api.libs.json._
+  import WebSocketRouter.{
+    ClientIn, 
+    ClientOut}
+  import akka.contrib.pattern.DistributedPubSubMediator.Publish
 
   val cards = Map[String, ActorRef]()
 
   def receive = {
     case ClientIn(_, message, content) => message match {
-      case "card-new" => mediator ! Publish("card-new", ClientOut("card-new", Json.obj("name" -> content)))
+      case "card-new" => Actors.mediator ! Publish("card-new", ClientOut("card-new", Json.obj("name" -> content)))
     }
-    case _ => println("LLEGO!!!!!!!!")
   }
 
 }

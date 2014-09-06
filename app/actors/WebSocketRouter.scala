@@ -39,7 +39,7 @@ object WebSocketRouter {
    * @param out actor which handles messages to the client. 
    * @return an ActorRef of WebSocketRouter. 
    */
-  def props(out: ActorRef, cardsManager: ActorRef) = Props(new WebSocketRouter(out, cardsManager))
+  def props(out: ActorRef) = Props(new WebSocketRouter(out))
 }
 
 /** Actor which enroutes messages and events from and to the client.
@@ -51,35 +51,30 @@ object WebSocketRouter {
  *
  * @constructor use the companion object method 'props'.
  */
-class WebSocketRouter (out: ActorRef, cardsManager: ActorRef) extends Actor with ActorLogging {
+class WebSocketRouter (out: ActorRef) extends Actor with ActorLogging {
 
-  import WebSocketRouter.{ClientIn, ClientOut}
-  import akka.contrib.pattern.DistributedPubSubExtension
+  import WebSocketRouter.{
+    ClientIn, 
+    ClientOut}
   import akka.contrib.pattern.DistributedPubSubMediator.{
-    Send,
     Subscribe,
     SubscribeAck,
     Unsubscribe,
     UnsubscribeAck}
 
-  /** The mediator actor which handles publishings and subscriptions. */
-  val mediator = DistributedPubSubExtension(context.system).mediator
-
   def receive = {
     case msg @ ClientIn(path, message, content) => path match {
       case "/echo" => out ! ClientOut("echo", Json.obj(message -> content))
-      case "/event-bus" => message match {
-        case "subscribe" => mediator ! Subscribe(content, self)
-        case "unsubscribe" => mediator ! Unsubscribe(content, self)
+      case "/mediator" => message match {
+        case "subscribe" => Actors.mediator ! Subscribe(content, self)
+        case "unsubscribe" => Actors.mediator ! Unsubscribe(content, self)
       }
+      case "/cards-manager" => Actors.sentimentCardsManager ! msg
       case _ => 
-        out ! ClientOut("echo", Json.obj(message -> content))
-        cardsManager ! msg
     }
-
-    case SubscribeAck(Subscribe(event, _, `self`)) => log.info(event)
-
-    case message: ClientOut => out ! message
+    case msg: ClientOut => out ! msg
+    case SubscribeAck(Subscribe(event, _, _)) => out ! ClientOut("subscribe", Json.obj("success" -> true))
+    case UnsubscribeAck(Unsubscribe(event, _, _)) => out ! ClientOut("unsubscribe", Json.obj("success" -> true))
   }
 
 }

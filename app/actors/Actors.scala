@@ -9,15 +9,18 @@ import play.api.libs.concurrent.Akka
 
 object Actors {
 
-  private def actors (implicit app: Application) = app.plugin[Actors]
-      .getOrElse(sys.error("Actors plugin not registered"))
+  private var app: Application = null
 
-  def sentimentCardsManager (implicit app: Application) = actors.sentimentCardsManager
+  private def actors = app.plugin[Actors].getOrElse(sys.error("Actors plugin not registered"))
 
-  def mediator (implicit app: Application) = actors.mediator
+  def apply (_app: Application): Unit = if (app == null) app = _app
+
+  def sentimentCardsManager = actors.sentimentCardsManager
+
+  def mediator = actors.mediator
 }
 
-class Actors(implicit app: Application) extends Plugin {
+class Actors(app: Application) extends Plugin {
 
   import akka.contrib.pattern.DistributedPubSubExtension
 
