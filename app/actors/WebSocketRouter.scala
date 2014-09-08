@@ -16,14 +16,14 @@ object WebSocketRouter {
   /** Message to be enrouted by the [[WebSocketRouter]]. */
   case class ClientIn (path: String, message: String, content: String)
 
+  /** Message to be delivered to the web socket client. */
+  case class ClientOut (event: String, data: JsValue)
+
   /** [[ClientIn]] companion which holds the formaters needed to convert from json. */
   object ClientIn {
     implicit val messageFormater = Json.format[ClientIn]
     implicit val messageFrameFormater = FrameFormatter.jsonFrame[ClientIn]
   }
-
-  /** Message to be delivered to the web socket client. */
-  case class ClientOut (event: String, data: JsValue)
 
   /** [[ClientOut]] companion which holds the formaters needed to convert to json. 
    *
@@ -53,28 +53,63 @@ object WebSocketRouter {
  */
 class WebSocketRouter (out: ActorRef) extends Actor with ActorLogging {
 
-  import WebSocketRouter.{
-    ClientIn, 
-    ClientOut}
   import akka.contrib.pattern.DistributedPubSubMediator.{
     Subscribe,
     SubscribeAck,
     Unsubscribe,
     UnsubscribeAck}
+  import WebSocketRouter.{
+    ClientIn, 
+    ClientOut}
+  import SentimentCard.{
+    CardNew,
+    CardDelete,
+    Comment}
+
+  /** Json formatter. */
+  implicit private val cardNewFormatter = Json.format[CardNew]
+
+  /** Json formatter. */
+  implicit private val cardDeleteFormatter = Json.format[CardDelete]
+
+  /** Regular expression. */
+  private val ChildCardPattern = "^/(.*)/(.*)".r
+
+  /** Messages to the events mediator. */
+  private def messageToMediator (message: String, content: String) = message match {
+    case "subscribe" => Actors.mediator ! Subscribe(content, self)
+    case "unsubscribe" => Actors.mediator ! Unsubscribe(content, self)
+  }
+
+  /** Messages to the sentiment cards manager. */
+  private def messageToManager (message: String, content: String) = message match {
+    case "card-new" => Actors.sentimentCardsManager ! CardNew("", content)
+    case "card-delete" => Actors.sentimentCardsManager ! CardDelete(content)
+  }
+
+  /** Messages to sentiment cards. */
+  private def messageToCard (card: ActorSelection, message: String, content: String) = message match {
+    case "comment" => card ! Comment(content)
+  }
+
+  /** Send an event to the client. */
+  private def emit (event: String, data: JsValue) = out ! ClientOut(event, data)
 
   def receive = {
-    case msg @ ClientIn(path, message, content) => path match {
-      case "/echo" => out ! ClientOut("echo", Json.obj(message -> content))
-      case "/mediator" => message match {
-        case "subscribe" => Actors.mediator ! Subscribe(content, self)
-        case "unsubscribe" => Actors.mediator ! Unsubscribe(content, self)
-      }
-      case "/cards-manager" => Actors.sentimentCardsManager ! msg
-      case _ => 
+    /** Messages from the client to the actors system. */
+    case ClientIn(path, message, content) => path match {
+      case "/echo" => emit("echo", Json.toJson(content))
+      case "/events" => messageToMediator(message, content)
+      case "/cards-manager" => messageToManager(message, content)
+      case ChildCardPattern(manager, card) => 
+        messageToCard(context.actorSelection(s"akka://application/$manager/$card"), message, content)
     }
-    case msg: ClientOut => out ! msg
-    case SubscribeAck(Subscribe(event, _, _)) => out ! ClientOut("subscribe", Json.obj("success" -> true))
-    case UnsubscribeAck(Unsubscribe(event, _, _)) => out ! ClientOut("unsubscribe", Json.obj("success" -> true))
+
+    /** Events from the actors system to the client. */
+    case SubscribeAck(Subscribe(event, _, _)) => emit("subscribe", Json.toJson(event)) 
+    case UnsubscribeAck(Unsubscribe(event, _, _)) => emit("unsubscribe", Json.toJson(event))
+    case CardNew(id, name) => emit("card-new", Json.obj("id" -> id, "name" -> name))
+    case CardDelete(name) => emit("card-delete", Json.toJson(name))
   }
 
 }

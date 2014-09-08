@@ -7,23 +7,27 @@ package actors
 import akka.actor._
 
 object SentimentCardsManager {
+
+  /** Constructor for [[SentimentCardsManager]] ActorRefs. 
+   *
+   * @return an ActorRef of SentimentCardsManager. 
+   */
   def props (): Props = Props(new SentimentCardsManager)
 }
 
 class SentimentCardsManager extends Actor with ActorLogging {
 
-  import scala.collection.mutable.Map
-  import play.api.libs.json._
-  import WebSocketRouter.{
-    ClientIn, 
-    ClientOut}
-  import akka.contrib.pattern.DistributedPubSubMediator.Publish
+  import SentimentCard.{
+    CardNew,
+    CardDelete
+  }
 
-  val cards = Map[String, ActorRef]()
+  def genId: String = "id-temporal"
+
+  def createSentimentCard (id: String, name: String) =
+    context.actorOf(SentimentCard.props(id, name), id)
 
   def receive = {
-    case ClientIn(_, message, content) => message match {
-      case "card-new" => Actors.mediator ! Publish("card-new", ClientOut("card-new", Json.obj("name" -> content)))
-    }
+    case CardNew(_, name) => createSentimentCard(genId, name)
   }
 }
