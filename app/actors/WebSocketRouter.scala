@@ -53,6 +53,8 @@ object WebSocketRouter {
  */
 class WebSocketRouter (out: ActorRef) extends Actor with ActorLogging {
 
+  import context.dispatcher
+  import scala.concurrent.duration._
   import akka.contrib.pattern.DistributedPubSubMediator.{
     Subscribe,
     SubscribeAck,
@@ -66,43 +68,76 @@ class WebSocketRouter (out: ActorRef) extends Actor with ActorLogging {
     CardDelete,
     Comment}
 
-  /** Json formatter. */
-  implicit private val cardNewFormatter = Json.format[CardNew]
-
-  /** Json formatter. */
-  implicit private val cardDeleteFormatter = Json.format[CardDelete]
-
   /** Regular expression. */
-  private val ChildCardPattern = "^/(.*)/(.*)".r
+  private val ChildCardPattern = "^(.*)/(.*)".r
+
+  /** Stores the object that can cancell the echo intervals. */
+  private var echoCanceller: Cancellable = null
+
+  /** Send an event to the client. */
+  private def emit (event: String, data: JsValue) = out ! ClientOut(event, data)
+
+  /** Send an error event to the client. */
+  private def error (description: String) = emit("error", Json.toJson(description))
+
+  /** Optional string to int. */
+  private def parseInt (int: String): Option[Int] =
+    try { Some(int.toInt) }
+    catch { case _: Exception => None }
+
+  /** Starts an interval with a time string of seconds. */
+  private def scheduleEcho (time: String): Option[Cancellable] = parseInt(time) match {
+    case Some(time) => Some(context.system.scheduler.schedule(
+      0 milliseconds,
+      time seconds,
+      out,
+      ClientOut("echo", Json.toJson("tick"))))
+    case None => None
+  }
+
+  /** Messages to start an echo. */
+  private def messageToEchoer (message: String, content: String) = message match {
+    case "interval" => 
+      if (echoCanceller == null) scheduleEcho(content) match {
+        case Some(canceller) => echoCanceller = canceller
+        case None => error("Not an integer.")
+      }
+      else {
+        echoCanceller.cancel
+        echoCanceller = null
+      }
+    case _ => emit("echo", Json.toJson(s"$message $content"))
+  }
 
   /** Messages to the events mediator. */
   private def messageToMediator (message: String, content: String) = message match {
     case "subscribe" => Actors.mediator ! Subscribe(content, self)
     case "unsubscribe" => Actors.mediator ! Unsubscribe(content, self)
+    case _ => error(s"No such message $message.")
   }
 
   /** Messages to the sentiment cards manager. */
   private def messageToManager (message: String, content: String) = message match {
     case "card-new" => Actors.sentimentCardsManager ! CardNew("", content)
     case "card-delete" => Actors.sentimentCardsManager ! CardDelete(content)
+    case _ => error(s"No such message $message.")
   }
 
   /** Messages to sentiment cards. */
   private def messageToCard (card: ActorSelection, message: String, content: String) = message match {
     case "comment" => card ! Comment(content)
+    case _ => error(s"No such message $message.")
   }
-
-  /** Send an event to the client. */
-  private def emit (event: String, data: JsValue) = out ! ClientOut(event, data)
 
   def receive = {
     /** Messages from the client to the actors system. */
     case ClientIn(path, message, content) => path match {
-      case "/echo" => emit("echo", Json.toJson(content))
-      case "/events" => messageToMediator(message, content)
-      case "/cards-manager" => messageToManager(message, content)
+      case "echo" => messageToEchoer(message, content) 
+      case "events" => messageToMediator(message, content)
+      case "cards-manager" => messageToManager(message, content)
       case ChildCardPattern(manager, card) => 
         messageToCard(context.actorSelection(s"akka://application/$manager/$card"), message, content)
+      case _ => error(s"No such path '$path'.")
     }
 
     /** Events from the actors system to the client. */
