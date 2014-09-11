@@ -19,6 +19,9 @@ object WebSocketRouter {
   /** Message to be delivered to the web socket client. */
   case class ClientOut (event: String, data: JsValue)
 
+  /** Message to test the event mediator. */
+  case class TestEvent (data: String)
+
   /** [[ClientIn]] companion which holds the formaters needed to convert from json. */
   object ClientIn {
     implicit val messageFormater = Json.format[ClientIn]
@@ -62,7 +65,8 @@ class WebSocketRouter (out: ActorRef) extends Actor with ActorLogging {
     UnsubscribeAck}
   import WebSocketRouter.{
     ClientIn, 
-    ClientOut}
+    ClientOut,
+    TestEvent}
   import SentimentCard.{
     CardNew,
     CardDelete,
@@ -81,15 +85,15 @@ class WebSocketRouter (out: ActorRef) extends Actor with ActorLogging {
   private def error (description: String) = emit("error", Json.toJson(description))
 
   /** Optional string to int. */
-  private def parseInt (int: String): Option[Int] =
-    try { Some(int.toInt) }
+  private def parseTime (int: String): Option[FiniteDuration] =
+    try { Some(int.toInt milliseconds) }
     catch { case _: Exception => None }
 
   /** Starts an interval with a time string of seconds. */
-  private def scheduleEcho (time: String): Option[Cancellable] = parseInt(time) match {
+  private def scheduleEcho (time: String): Option[Cancellable] = parseTime(time) match {
     case Some(time) => Some(context.system.scheduler.schedule(
       0 milliseconds,
-      time seconds,
+      time,
       out,
       ClientOut("echo", Json.toJson("tick"))))
     case None => None
@@ -100,7 +104,7 @@ class WebSocketRouter (out: ActorRef) extends Actor with ActorLogging {
     case "interval" => 
       if (echoCanceller == null) scheduleEcho(content) match {
         case Some(canceller) => echoCanceller = canceller
-        case None => error("Not an integer.")
+        case None => error("Not an integer")
       }
       else {
         echoCanceller.cancel
@@ -143,6 +147,7 @@ class WebSocketRouter (out: ActorRef) extends Actor with ActorLogging {
     /** Events from the actors system to the client. */
     case SubscribeAck(Subscribe(event, _, _)) => emit("subscribe", Json.toJson(event)) 
     case UnsubscribeAck(Unsubscribe(event, _, _)) => emit("unsubscribe", Json.toJson(event))
+    case TestEvent(data) => emit("test", Json.toJson(data))
     case CardNew(id, name) => emit("card-new", Json.obj("id" -> id, "name" -> name))
     case CardDelete(name) => emit("card-delete", Json.toJson(name))
   }
