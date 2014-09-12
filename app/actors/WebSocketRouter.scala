@@ -128,8 +128,8 @@ class WebSocketRouter (out: ActorRef) extends Actor with ActorLogging {
   }
 
   /** Messages to sentiment cards. */
-  private def messageToCard (card: ActorSelection, message: String, content: String) = message match {
-    case "comment" => card ! Comment(content)
+  private def messageToCards (cards: ActorSelection, message: String, content: String) = message match {
+    case "comment" => cards ! Comment(content)
     case _ => error(s"No such message $message.")
   }
 
@@ -140,7 +140,7 @@ class WebSocketRouter (out: ActorRef) extends Actor with ActorLogging {
       case "events" => messageToMediator(message, content)
       case "cards-manager" => messageToManager(message, content)
       case ChildCardPattern(manager, card) => 
-        messageToCard(context.actorSelection(s"akka://application/$manager/$card"), message, content)
+        messageToCards(context.actorSelection(s"/user/$manager/$card"), message, content)
       case _ => error(s"No such path '$path'.")
     }
 

@@ -14,6 +14,8 @@ object SentimentCard {
 
   case class Comment (body: String)
 
+  case object CommentAck
+
   def props (id: String, name: String): Props = 
     Props(new SentimentCard(id: String, name: String))
 }
@@ -24,7 +26,8 @@ class SentimentCard (id: String, name: String) extends Actor with ActorLogging {
   import SentimentCard.{
     CardNew,
     CardDelete,
-    Comment
+    Comment,
+    CommentAck
   }
 
   override def preStart () = Actors.mediator ! Publish("card-new", CardNew(id, name))
@@ -32,7 +35,7 @@ class SentimentCard (id: String, name: String) extends Actor with ActorLogging {
   override def postStop () = Actors.mediator ! Publish("card-delete", CardDelete(id))
 
   def receive = {
-    case Comment(body) => log.info("New comment: {}", body)
+    case Comment(body) => sender ! CommentAck
   }
 
 }

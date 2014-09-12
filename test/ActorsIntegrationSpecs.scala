@@ -4,36 +4,45 @@
 
 import scala.concurrent.duration._
 import play.api.libs.json._
+
 import akka.contrib.pattern.DistributedPubSubMediator.{
   Publish,
   Subscribe,
   Unsubscribe}
+
 import akka.actor.{
+  PoisonPill,
   ActorSystem,
   ActorRef,
   Actor,
   Props}
+
 import akka.testkit.{ 
   TestActors, 
   TestKit, 
   ImplicitSender}
+
 import org.scalatest.{
   WordSpecLike, 
   Matchers, 
   BeforeAndAfterAll}
+
 import actors.{
   Actors,
   WebSocketRouter,
   SentimentCardsManager,
   SentimentCard}
+
 import WebSocketRouter.{
   ClientIn,
   ClientOut,
   TestEvent}
+
 import SentimentCard.{
   CardNew,
   CardDelete,
-  Comment}
+  Comment,
+  CommentAck}
 
 class ActorsIntegrationSpec (_system: ActorSystem) extends TestKit(_system) 
 with ImplicitSender
@@ -41,8 +50,10 @@ with WordSpecLike
 with Matchers 
 with BeforeAndAfterAll {
 
+  import system.dispatcher
   var router: ActorRef = _
   var manager: ActorRef = _
+  var testCard: ActorRef = _
   var testCardId: String = _
 
   def this() = this(ActorSystem("ActorsIntegrationSpecsSystem"))
@@ -98,7 +109,7 @@ with BeforeAndAfterAll {
     }
   }
 
-  "The SentimentCard life cycle" should {
+  "The SentimentCardManager" should {
     
     "create a new SentimentCard" in {
       manager ! CardNew("", "Testing Card")
@@ -114,4 +125,22 @@ with BeforeAndAfterAll {
     }
   }
 
+  "A SentimentCard" should {
+  
+    "publish creation" in {
+      testCard = system.actorOf(SentimentCard.props("test-id", "test-card"), "test-id")
+      expectMsg(CardNew("test-id", "test-card"))
+    }
+
+    "receive a comment" in {
+      testCard ! Comment("test")
+      expectMsg(CommentAck)
+    }
+
+    "publish deletion" in {
+      testCard ! PoisonPill
+      expectMsg(CardDelete("test-id"))
+    }
+
+  }
 }
