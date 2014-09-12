@@ -29,6 +29,8 @@ class SentimentCard (id: String, name: String) extends Actor with ActorLogging {
 
   override def preStart () = Actors.mediator ! Publish("card-new", CardNew(id, name))
 
+  override def postStop () = Actors.mediator ! Publish("card-delete", CardDelete(id))
+
   def receive = {
     case Comment(body) => log.info("New comment: {}", body)
   }

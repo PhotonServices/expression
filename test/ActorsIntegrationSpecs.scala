@@ -2,11 +2,15 @@
  * @author Francisco Miguel Arámburo Torres - atfm05@gmail.com
  */
 
-import akka.contrib.pattern.DistributedPubSubMediator.Publish
 import scala.concurrent.duration._
 import play.api.libs.json._
+import akka.contrib.pattern.DistributedPubSubMediator.{
+  Publish,
+  Subscribe,
+  Unsubscribe}
 import akka.actor.{
   ActorSystem,
+  ActorRef,
   Actor,
   Props}
 import akka.testkit.{ 
@@ -26,6 +30,10 @@ import WebSocketRouter.{
   ClientIn,
   ClientOut,
   TestEvent}
+import SentimentCard.{
+  CardNew,
+  CardDelete,
+  Comment}
 
 class ActorsIntegrationSpec (_system: ActorSystem) extends TestKit(_system) 
 with ImplicitSender
@@ -33,14 +41,25 @@ with WordSpecLike
 with Matchers 
 with BeforeAndAfterAll {
 
+  var router: ActorRef = _
+  var manager: ActorRef = _
+  var testCardId: String = _
+
   def this() = this(ActorSystem("ActorsIntegrationSpecsSystem"))
+
+  override def beforeAll {
+    Actors(system)
+    router = system.actorOf(WebSocketRouter.props(self))
+    manager = Actors.sentimentCardsManager
+    Actors.mediator ! Subscribe("card-new", self)
+    receiveOne(200 milliseconds) // SubscribeAck
+    Actors.mediator ! Subscribe("card-delete", self)
+    receiveOne(200 milliseconds) // SubscribeAck
+  }
 
   override def afterAll {
     TestKit.shutdownActorSystem(system)
   }
-
-  Actors(system)
-  val router = system.actorOf(WebSocketRouter.props(self))
 
   "A WebSocketRouter" should {
 
@@ -77,7 +96,22 @@ with BeforeAndAfterAll {
       router ! ClientIn("events", "unsubscribe", "test")
       expectMsg(ClientOut("unsubscribe", Json.toJson("test")))
     }
+  }
 
+  "The SentimentCard life cycle" should {
+    
+    "create a new SentimentCard" in {
+      manager ! CardNew("", "Testing Card")
+      val CardNew(id, name) = receiveOne(200 milliseconds)
+      testCardId = id
+      assert(name == "Testing Card")
+    }
+
+    "delete a sentiment card" in {
+      manager ! CardDelete(testCardId)
+      val CardDelete(id) = receiveOne(200 milliseconds)
+      assert(id == testCardId)
+    }
   }
 
 }
