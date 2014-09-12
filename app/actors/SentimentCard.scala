@@ -30,6 +30,10 @@ class SentimentCard (id: String, name: String) extends Actor with ActorLogging {
     CommentAck
   }
 
+  val stats = context.actorOf(SentimentStats.props, "stats")
+
+  val folksonomy = context.actorOf(Folksonomy.props, "folksonomy")
+
   override def preStart () = Actors.mediator ! Publish("card-new", CardNew(id, name))
 
   override def postStop () = Actors.mediator ! Publish("card-delete", CardDelete(id))
