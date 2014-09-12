@@ -23,7 +23,7 @@ object Actors {
   private lazy val customSysMediator= akka.contrib.pattern.DistributedPubSubExtension(customSys).mediator
 
   /** The manager actor (with custom actor system) which handles the creation and deletion of sentiment cards. */
-  private lazy val customSysManager = customSys.actorOf(SentimentCardsManager.props(), "cards-manager")
+  private lazy val customSysManager = customSys.actorOf(SentimentCardsManager.props, "cards-manager")
 
   /** Gets the 'Actors' play plugin. */
   private def actors = app.plugin[Actors].getOrElse(sys.error("Actors plugin not registered"))
@@ -51,7 +51,7 @@ class Actors(app: Application) extends Plugin {
   private lazy val mediator = akka.contrib.pattern.DistributedPubSubExtension(system).mediator
 
   /** The manager actor which handles the creation and deletion of sentiment cards. */
-  private lazy val sentimentCardsManager = system.actorOf(SentimentCardsManager.props(), "cards-manager")
+  private lazy val sentimentCardsManager = system.actorOf(SentimentCardsManager.props, "cards-manager")
 
   /** The Akka system provided by the Play application. */
   def system = Akka.system(app)

@@ -12,7 +12,7 @@ object SentimentCardsManager {
    *
    * @return an ActorRef of SentimentCardsManager. 
    */
-  def props (): Props = Props(new SentimentCardsManager)
+  def props: Props = Props(new SentimentCardsManager)
 }
 
 class SentimentCardsManager extends Actor with ActorLogging {
