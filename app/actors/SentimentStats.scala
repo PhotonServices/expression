@@ -27,7 +27,7 @@ class SentimentStats (id: String) extends Actor with ActorLogging {
     AmountUpdate,
     BarsUpdate}
 
-  var finalSentiment = 0f
+  var global = 0f
 
   val bars = Map(
     "excellent" -> 0f,
@@ -47,15 +47,15 @@ class SentimentStats (id: String) extends Actor with ActorLogging {
 
   def receive = {
     case Sentiment(sentiment) => 
-      // Recalculate total amount..
+      // Recalculate total amount.
       total = total + 1
       Actors.mediator ! Publish(s"$id:count-total", AmountUpdate(id, "total", total))
       // Recalculate sentiment amount.
       amount(sentiment) = amount(sentiment) + 1 
       Actors.mediator ! Publish(s"$id:count-$sentiment", AmountUpdate(id, sentiment, amount(sentiment)))
       // Recalculate final sentiment.
-      val lastSentiment = finalSentiment
-      finalSentiment = amount.foldLeft(0f) { 
+      val lastSentiment = global
+      global = amount.foldLeft(0f) { 
         case (sum, (sentiment, num)) => sentiment match {
           case "excellent" => sum + num * 2f
           case "good" => sum + num * 1f
@@ -64,8 +64,8 @@ class SentimentStats (id: String) extends Actor with ActorLogging {
           case "terrible" => sum + num * -2f
         }
       } / total
-      if (lastSentiment != finalSentiment)
-        Actors.mediator ! Publish(s"$id:sentiment-final", SentimentUpdate(id, finalSentiment))
+      if (lastSentiment != global)
+        Actors.mediator ! Publish(s"$id:sentiment-final", SentimentUpdate(id, global))
       // Recalculate bars.
       amount.map { 
         case (sentiment, num) => bars(sentiment) = num * 100f / total
