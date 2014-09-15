@@ -16,20 +16,9 @@ object SentimentCard {
 
   case object CommentAck
 
-  case class CommentData (sentiment: Float, folksonomies: Map[String, Array[String]])
+  case class CommentData (sentiment: String, folksonomies: Map[String, Array[String]])
 
-  class SentimentFormatError (format: Float) extends Exception("Wrong sentiment format: "+format)
-
-  case class Sentiment (sentiment: Float) {
-    override def toString = sentiment match {
-      case 2f => "excellent"
-      case 1f => "good"
-      case 0f => "neutral"
-      case -1f => "bad"
-      case -2f => "terrible"
-      case _ => throw new SentimentFormatError(sentiment)
-    }
-  }
+  case class Sentiment (sentiment: String) 
 
   case class Folksonomies (folksonomies: Map[String, Array[String]])
 

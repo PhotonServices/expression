@@ -165,7 +165,7 @@ with BeforeAndAfterAll {
   "A SentimentStats actor" should {
 
     "publish correct stats (1)" in {
-      stats ! Sentiment(2f)
+      stats ! Sentiment("excellent")
       within (200 milliseconds) {
         expectMsg(AmountUpdate("testid", "total", 1))
         expectMsg(AmountUpdate("testid", "excellent", 1))
@@ -180,7 +180,7 @@ with BeforeAndAfterAll {
     }
 
     "publish correct stats (2)" in {
-      stats ! Sentiment(-1f)
+      stats ! Sentiment("bad")
       within (200 milliseconds) {
         expectMsg(AmountUpdate("testid", "total", 2))
         expectMsg(SentimentUpdate("testid", 0.5f))

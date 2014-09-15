@@ -45,34 +45,31 @@ class SentimentStats (id: String) extends Actor with ActorLogging {
     "bad" -> 0,
     "terrible" -> 0)
 
-  private def processSentiment (sentiment: String) = {
-    // Recalculate total amount..
-    total = total + 1
-    Actors.mediator ! Publish(s"$id:count-total", AmountUpdate(id, "total", total))
-    // Recalculate sentiment amount.
-    amount(sentiment) = amount(sentiment) + 1 
-    Actors.mediator ! Publish(s"$id:count-$sentiment", AmountUpdate(id, sentiment, amount(sentiment)))
-    // Recalculate final sentiment.
-    val lastSentiment = finalSentiment
-    finalSentiment = amount.foldLeft(0f) { 
-      case (sum, (sentiment, num)) => sentiment match {
-        case "excellent" => sum + num * 2f
-        case "good" => sum + num * 1f
-        case "neutral" => sum
-        case "bad" => sum + num * -1f
-        case "terrible" => sum + num * -2f
-      }
-    } / total
-    if (lastSentiment != finalSentiment)
-      Actors.mediator ! Publish(s"$id:sentiment-final", SentimentUpdate(id, finalSentiment))
-    // Recalculate bars.
-    amount.map { 
-      case (sentiment, num) => bars(sentiment) = num * 100f / total
-    }
-    Actors.mediator ! Publish(s"$id:sentiment-bars", BarsUpdate(id, bars.toMap))
-  }
-
   def receive = {
-    case snt: Sentiment => processSentiment(snt.toString)
+    case Sentiment(sentiment) => 
+      // Recalculate total amount..
+      total = total + 1
+      Actors.mediator ! Publish(s"$id:count-total", AmountUpdate(id, "total", total))
+      // Recalculate sentiment amount.
+      amount(sentiment) = amount(sentiment) + 1 
+      Actors.mediator ! Publish(s"$id:count-$sentiment", AmountUpdate(id, sentiment, amount(sentiment)))
+      // Recalculate final sentiment.
+      val lastSentiment = finalSentiment
+      finalSentiment = amount.foldLeft(0f) { 
+        case (sum, (sentiment, num)) => sentiment match {
+          case "excellent" => sum + num * 2f
+          case "good" => sum + num * 1f
+          case "neutral" => sum
+          case "bad" => sum + num * -1f
+          case "terrible" => sum + num * -2f
+        }
+      } / total
+      if (lastSentiment != finalSentiment)
+        Actors.mediator ! Publish(s"$id:sentiment-final", SentimentUpdate(id, finalSentiment))
+      // Recalculate bars.
+      amount.map { 
+        case (sentiment, num) => bars(sentiment) = num * 100f / total
+      }
+      Actors.mediator ! Publish(s"$id:sentiment-bars", BarsUpdate(id, bars.toMap))
   }
 }
