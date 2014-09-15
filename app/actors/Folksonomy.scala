@@ -8,10 +8,10 @@ import akka.actor._
 
 object Folksonomy {
 
-  def props: Props = Props(new Folksonomy)
+  def props (id: String): Props = Props(new Folksonomy(id))
 }
 
-class Folksonomy extends Actor with ActorLogging {
+class Folksonomy (id: String) extends Actor with ActorLogging {
 
   def receive = {
     case _ => 

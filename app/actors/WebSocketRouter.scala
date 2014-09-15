@@ -71,6 +71,10 @@ class WebSocketRouter (out: ActorRef) extends Actor with ActorLogging {
     CardNew,
     CardDelete,
     Comment}
+  import SentimentStats.{
+    SentimentUpdate,
+    AmountUpdate,
+    BarsUpdate}
 
   /** Regular expression. */
   private val ChildCardPattern = "^(.*)/(.*)".r
@@ -150,6 +154,8 @@ class WebSocketRouter (out: ActorRef) extends Actor with ActorLogging {
     case TestEvent(data) => emit("test", Json.toJson(data))
     case CardNew(id, name) => emit("card-new", Json.obj("id" -> id, "name" -> name))
     case CardDelete(name) => emit("card-delete", Json.toJson(name))
+    case AmountUpdate(card, sentiment, amount) => emit(s"$card:count-$sentiment", Json.toJson(amount))
+    case SentimentUpdate(card, value) => emit(s"$card:sentiment-final", Json.toJson(value)) 
+    case BarsUpdate(card, bars) => emit(s"$card:sentiment-bars", Json.toJson(bars)) 
   }
-
 }

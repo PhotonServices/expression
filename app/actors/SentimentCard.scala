@@ -16,6 +16,23 @@ object SentimentCard {
 
   case object CommentAck
 
+  case class CommentData (sentiment: Float, folksonomies: Map[String, Array[String]])
+
+  class SentimentFormatError (format: Float) extends Exception("Wrong sentiment format: "+format)
+
+  case class Sentiment (sentiment: Float) {
+    override def toString = sentiment match {
+      case 2f => "excellent"
+      case 1f => "good"
+      case 0f => "neutral"
+      case -1f => "bad"
+      case -2f => "terrible"
+      case _ => throw new SentimentFormatError(sentiment)
+    }
+  }
+
+  case class Folksonomies (folksonomies: Map[String, Array[String]])
+
   def props (id: String, name: String): Props = 
     Props(new SentimentCard(id: String, name: String))
 }
@@ -30,9 +47,9 @@ class SentimentCard (id: String, name: String) extends Actor with ActorLogging {
     CommentAck
   }
 
-  val stats = context.actorOf(SentimentStats.props, "stats")
+  val stats = context.actorOf(SentimentStats.props(id), "stats")
 
-  val folksonomy = context.actorOf(Folksonomy.props, "folksonomy")
+  val folksonomy = context.actorOf(Folksonomy.props(id), "folksonomy")
 
   override def preStart () = Actors.mediator ! Publish("card-new", CardNew(id, name))
 

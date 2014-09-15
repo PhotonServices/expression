@@ -31,7 +31,9 @@ import actors.{
   Actors,
   WebSocketRouter,
   SentimentCardsManager,
-  SentimentCard}
+  SentimentCard,
+  SentimentStats,
+  Folksonomy}
 
 import WebSocketRouter.{
   ClientIn,
@@ -42,7 +44,13 @@ import SentimentCard.{
   CardNew,
   CardDelete,
   Comment,
-  CommentAck}
+  CommentAck,
+  Sentiment}
+
+import SentimentStats.{
+  SentimentUpdate,
+  AmountUpdate,
+  BarsUpdate}
 
 class ActorsIntegrationSpec (_system: ActorSystem) extends TestKit(_system) 
 with ImplicitSender
@@ -55,6 +63,7 @@ with BeforeAndAfterAll {
   var manager: ActorRef = _
   var testCard: ActorRef = _
   var testCardId: String = _
+  var stats: ActorRef = _
 
   def this() = this(ActorSystem("ActorsIntegrationSpecsSystem"))
 
@@ -62,9 +71,18 @@ with BeforeAndAfterAll {
     Actors(system)
     router = system.actorOf(WebSocketRouter.props(self))
     manager = Actors.sentimentCardsManager
+    stats = system.actorOf(SentimentStats.props("testid"))
     Actors.mediator ! Subscribe("card-new", self)
     receiveOne(200 milliseconds) // SubscribeAck
     Actors.mediator ! Subscribe("card-delete", self)
+    receiveOne(200 milliseconds) // SubscribeAck
+    Actors.mediator ! Subscribe("testid:sentiment-final", self)
+    receiveOne(200 milliseconds) // SubscribeAck
+    Actors.mediator ! Subscribe("testid:sentiment-bars", self)
+    receiveOne(200 milliseconds) // SubscribeAck
+    Actors.mediator ! Subscribe("testid:count-total", self)
+    receiveOne(200 milliseconds) // SubscribeAck
+    Actors.mediator ! Subscribe("testid:count-excellent", self)
     receiveOne(200 milliseconds) // SubscribeAck
   }
 
@@ -142,5 +160,37 @@ with BeforeAndAfterAll {
       expectMsg(CardDelete("test-id"))
     }
 
+  }
+
+  "A SentimentStats actor" should {
+
+    "publish correct stats (1)" in {
+      stats ! Sentiment(2f)
+      within (200 milliseconds) {
+        expectMsg(AmountUpdate("testid", "total", 1))
+        expectMsg(AmountUpdate("testid", "excellent", 1))
+        expectMsg(SentimentUpdate("testid", 2f))
+        expectMsg(BarsUpdate("testid", Map(
+          "excellent" -> 100f,
+          "good" -> 0f,
+          "neutral" -> 0f,
+          "bad" -> 0f,
+          "terrible" -> 0f)))
+      }
+    }
+
+    "publish correct stats (2)" in {
+      stats ! Sentiment(-1f)
+      within (200 milliseconds) {
+        expectMsg(AmountUpdate("testid", "total", 2))
+        expectMsg(SentimentUpdate("testid", 0.5f))
+        expectMsg(BarsUpdate("testid", Map(
+          "excellent" -> 50f,
+          "good" -> 0f,
+          "neutral" -> 0f,
+          "bad" -> 50f,
+          "terrible" -> 0f)))
+      }
+    }
   }
 }
