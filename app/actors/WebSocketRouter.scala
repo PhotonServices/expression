@@ -189,6 +189,6 @@ class WebSocketRouter (out: ActorRef) extends Actor with ActorLogging {
       emit(s"$card:sentiment-bars", Json.toJson(bars)) 
     
     case FolksonomyUpdate(card, sentiment, action, word) =>
-      emit(a"$card:folksonomy-$sentiment:$action", Json.toJson(word))
+      emit(s"$card:folksonomy-$sentiment:$action", Json.toJson(word))
   }
 }

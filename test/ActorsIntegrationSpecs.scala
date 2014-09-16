@@ -72,28 +72,22 @@ with BeforeAndAfterAll {
 
   def this() = this(ActorSystem("ActorsIntegrationSpecsSystem"))
 
+  def subscribe (event: String) = {
+    Actors.mediator ! Subscribe(event, self)
+    receiveOne(200 milliseconds) // SubscribeAck
+  }
+
+  def unsubscribe (event: String) = {
+    Actors.mediator ! Unsubscribe(event, self)
+    receiveOne(200 milliseconds) // UnsubscribeAck
+  }
+
   override def beforeAll {
     Actors(system)
     router = system.actorOf(WebSocketRouter.props(self))
     manager = Actors.sentimentCardsManager
     stats = system.actorOf(SentimentStats.props("testid"))
     folksonomy = system.actorOf(Folksonomy.props("testid"))
-    Actors.mediator ! Subscribe("card-new", self)
-    receiveOne(200 milliseconds) // SubscribeAck
-    Actors.mediator ! Subscribe("card-delete", self)
-    receiveOne(200 milliseconds) // SubscribeAck
-    Actors.mediator ! Subscribe("testid:sentiment-final", self)
-    receiveOne(200 milliseconds) // SubscribeAck
-    Actors.mediator ! Subscribe("testid:sentiment-bars", self)
-    receiveOne(200 milliseconds) // SubscribeAck
-    Actors.mediator ! Subscribe("testid:count-total", self)
-    receiveOne(200 milliseconds) // SubscribeAck
-    Actors.mediator ! Subscribe("testid:count-excellent", self)
-    receiveOne(200 milliseconds) // SubscribeAck
-    Actors.mediator ! Subscribe("testid:folksonomy-total:add", self)
-    receiveOne(200 milliseconds) // SubscribeAck
-    Actors.mediator ! Subscribe("testid:folksonomy-excellent:add", self)
-    receiveOne(200 milliseconds) // SubscribeAck
   }
 
   override def afterAll {
@@ -140,24 +134,30 @@ with BeforeAndAfterAll {
   "The SentimentCardManager" should {
     
     "create a new SentimentCard" in {
+      subscribe("card-new")
       manager ! CardNew("", "Testing Card")
       val CardNew(id, name) = receiveOne(200 milliseconds)
       testCardId = id
       assert(name == "Testing Card")
+      unsubscribe("card-new")
     }
 
     "delete a sentiment card" in {
+      subscribe("card-delete")
       manager ! CardDelete(testCardId)
       val CardDelete(id) = receiveOne(200 milliseconds)
       assert(id == testCardId)
+      unsubscribe("card-delete")
     }
   }
 
   "A SentimentCard" should {
   
     "publish creation" in {
+      subscribe("card-new")
       testCard = system.actorOf(SentimentCard.props("test-id", "test-card"), "test-id")
       expectMsg(CardNew("test-id", "test-card"))
+      unsubscribe("card-new")
     }
 
     "receive a comment" in {
@@ -166,8 +166,10 @@ with BeforeAndAfterAll {
     }
 
     "publish deletion" in {
+      subscribe("card-delete")
       testCard ! PoisonPill
       expectMsg(CardDelete("test-id"))
+      unsubscribe("card-delete")
     }
 
   }
@@ -175,6 +177,10 @@ with BeforeAndAfterAll {
   "A SentimentStats actor" should {
 
     "publish correct stats (1)" in {
+      subscribe("testid:sentiment-final")
+      subscribe("testid:sentiment-bars")
+      subscribe("testid:count-total")
+      subscribe("testid:count-excellent")
       stats ! Sentiment("excellent")
       within (200 milliseconds) {
         expectMsg(AmountUpdate("testid", "total", 1))
@@ -187,29 +193,23 @@ with BeforeAndAfterAll {
           "bad" -> 0f,
           "terrible" -> 0f)))
       }
-    }
-
-    "publish correct stats (2)" in {
-      stats ! Sentiment("bad")
-      within (200 milliseconds) {
-        expectMsg(AmountUpdate("testid", "total", 2))
-        expectMsg(SentimentUpdate("testid", 0.5f))
-        expectMsg(BarsUpdate("testid", Map(
-          "excellent" -> 50f,
-          "good" -> 0f,
-          "neutral" -> 0f,
-          "bad" -> 50f,
-          "terrible" -> 0f)))
-      }
+      unsubscribe("testid:sentiment-final")
+      unsubscribe("testid:sentiment-bars")
+      unsubscribe("testid:count-total")
+      unsubscribe("testid:count-excellent")
     }
   }
 
   "A Folksonomy actor" should {
 
     "publish correct folksonomies (1)" in {
+      subscribe("testid:folksonomy-total:add")
+      subscribe("testid:folksonomy-excellent:add")
       folksonomy ! FolksonomyWord("excellent", "word1")
       expectMsg(FolksonomyUpdate("testid", "excellent", "add", "word1"))
       //expectMsg(FolksonomyUpdate("testid", "global", "add", "word1")
+      unsubscribe("testid:folksonomy-total:add")
+      unsubscribe("testid:folksonomy-excellent:add")
     }
   }
 }
