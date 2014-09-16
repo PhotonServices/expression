@@ -58,23 +58,30 @@ class WebSocketRouter (out: ActorRef) extends Actor with ActorLogging {
 
   import context.dispatcher
   import scala.concurrent.duration._
+
   import akka.contrib.pattern.DistributedPubSubMediator.{
     Subscribe,
     SubscribeAck,
     Unsubscribe,
     UnsubscribeAck}
+
   import WebSocketRouter.{
     ClientIn, 
     ClientOut,
     TestEvent}
+
   import SentimentCard.{
     CardNew,
     CardDelete,
     Comment}
+
   import SentimentStats.{
     SentimentUpdate,
     AmountUpdate,
     BarsUpdate}
+
+  import Folksonomy.{
+    FolksonomyUpdate}
 
   /** Regular expression. */
   private val ChildCardPattern = "^(.*)/(.*)".r
@@ -140,22 +147,48 @@ class WebSocketRouter (out: ActorRef) extends Actor with ActorLogging {
   def receive = {
     /** Messages from the client to the actors system. */
     case ClientIn(path, message, content) => path match {
-      case "echo" => messageToEchoer(message, content) 
-      case "events" => messageToMediator(message, content)
-      case "cards-manager" => messageToManager(message, content)
+      case "echo" => 
+        messageToEchoer(message, content) 
+
+      case "events" => 
+        messageToMediator(message, content)
+
+      case "cards-manager" => 
+        messageToManager(message, content)
+
       case ChildCardPattern(manager, card) => 
         messageToCards(context.actorSelection(s"/user/$manager/$card"), message, content)
-      case _ => error(s"No such path '$path'.")
+
+      case _ => 
+        error(s"No such path '$path'.")
     }
 
     /** Events from the actors system to the client. */
-    case SubscribeAck(Subscribe(event, _, _)) => emit("subscribe", Json.toJson(event)) 
-    case UnsubscribeAck(Unsubscribe(event, _, _)) => emit("unsubscribe", Json.toJson(event))
-    case TestEvent(data) => emit("test", Json.toJson(data))
-    case CardNew(id, name) => emit("card-new", Json.obj("id" -> id, "name" -> name))
-    case CardDelete(name) => emit("card-delete", Json.toJson(name))
-    case AmountUpdate(card, sentiment, amount) => emit(s"$card:count-$sentiment", Json.toJson(amount))
-    case SentimentUpdate(card, value) => emit(s"$card:sentiment-final", Json.toJson(value)) 
-    case BarsUpdate(card, bars) => emit(s"$card:sentiment-bars", Json.toJson(bars)) 
+    case SubscribeAck(Subscribe(event, _, _)) => 
+      emit("subscribe", Json.toJson(event)) 
+
+    case UnsubscribeAck(Unsubscribe(event, _, _)) => 
+      emit("unsubscribe", Json.toJson(event))
+
+    case TestEvent(data) => 
+      emit("test", Json.toJson(data))
+
+    case CardNew(id, name) => 
+      emit("card-new", Json.obj("id" -> id, "name" -> name))
+
+    case CardDelete(name) => 
+      emit("card-delete", Json.toJson(name))
+
+    case AmountUpdate(card, sentiment, amount) => 
+      emit(s"$card:count-$sentiment", Json.toJson(amount))
+
+    case SentimentUpdate(card, value) => 
+      emit(s"$card:sentiment-final", Json.toJson(value)) 
+
+    case BarsUpdate(card, bars) => 
+      emit(s"$card:sentiment-bars", Json.toJson(bars)) 
+    
+    case FolksonomyUpdate(card, sentiment, action, word) =>
+      emit(a"$card:folksonomy-$sentiment:$action", Json.toJson(word))
   }
 }
