@@ -44,13 +44,17 @@ import SentimentCard.{
   CardNew,
   CardDelete,
   Comment,
-  CommentAck,
-  Sentiment}
+  CommentAck}
 
 import SentimentStats.{
+  Sentiment,
   SentimentUpdate,
   AmountUpdate,
   BarsUpdate}
+
+import Folksonomy.{
+  FolksonomyWord,
+  FolksonomyUpdate}
 
 class ActorsIntegrationSpec (_system: ActorSystem) extends TestKit(_system) 
 with ImplicitSender
@@ -64,6 +68,7 @@ with BeforeAndAfterAll {
   var testCard: ActorRef = _
   var testCardId: String = _
   var stats: ActorRef = _
+  var folksonomy: ActorRef = _
 
   def this() = this(ActorSystem("ActorsIntegrationSpecsSystem"))
 
@@ -72,6 +77,7 @@ with BeforeAndAfterAll {
     router = system.actorOf(WebSocketRouter.props(self))
     manager = Actors.sentimentCardsManager
     stats = system.actorOf(SentimentStats.props("testid"))
+    folksonomy = system.actorOf(Folksonomy.props("testid"))
     Actors.mediator ! Subscribe("card-new", self)
     receiveOne(200 milliseconds) // SubscribeAck
     Actors.mediator ! Subscribe("card-delete", self)
@@ -83,6 +89,10 @@ with BeforeAndAfterAll {
     Actors.mediator ! Subscribe("testid:count-total", self)
     receiveOne(200 milliseconds) // SubscribeAck
     Actors.mediator ! Subscribe("testid:count-excellent", self)
+    receiveOne(200 milliseconds) // SubscribeAck
+    Actors.mediator ! Subscribe("testid:folksonomy-total:add", self)
+    receiveOne(200 milliseconds) // SubscribeAck
+    Actors.mediator ! Subscribe("testid:folksonomy-excellent:add", self)
     receiveOne(200 milliseconds) // SubscribeAck
   }
 
@@ -191,6 +201,15 @@ with BeforeAndAfterAll {
           "bad" -> 50f,
           "terrible" -> 0f)))
       }
+    }
+  }
+
+  "A Folksonomy actor" should {
+
+    "publish correct folksonomies (1)" in {
+      folksonomy ! FolksonomyWord("excellent", "word1")
+      expectMsg(FolksonomyUpdate("testid", "excellent", "add", "word1"))
+      //expectMsg(FolksonomyUpdate("testid", "global", "add", "word1")
     }
   }
 }
