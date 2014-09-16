@@ -176,40 +176,77 @@ with BeforeAndAfterAll {
 
   "A SentimentStats actor" should {
 
-    "publish correct stats (1)" in {
+    "calculate and publish final sentiment" in {
       subscribe("testid:sentiment-final")
-      subscribe("testid:sentiment-bars")
+      stats ! Sentiment("excellent")
+      expectMsg(SentimentUpdate("testid", 2f))
+      unsubscribe("testid:sentiment-final")
+    }
+
+    "calculate and publish total comments" in {
       subscribe("testid:count-total")
+      stats ! Sentiment("excellent")
+      expectMsg(AmountUpdate("testid", "total", 2))
+      unsubscribe("testid:count-total")
+    }
+
+    "calculate and publish total comments of specific sentiment" in {
       subscribe("testid:count-excellent")
       stats ! Sentiment("excellent")
-      within (200 milliseconds) {
-        expectMsg(AmountUpdate("testid", "total", 1))
-        expectMsg(AmountUpdate("testid", "excellent", 1))
-        expectMsg(SentimentUpdate("testid", 2f))
-        expectMsg(BarsUpdate("testid", Map(
-          "excellent" -> 100f,
-          "good" -> 0f,
-          "neutral" -> 0f,
-          "bad" -> 0f,
-          "terrible" -> 0f)))
-      }
-      unsubscribe("testid:sentiment-final")
-      unsubscribe("testid:sentiment-bars")
-      unsubscribe("testid:count-total")
+      expectMsg(AmountUpdate("testid", "excellent", 3))
       unsubscribe("testid:count-excellent")
+    }
+
+    "calculate and publish statistical bars" in {
+      subscribe("testid:sentiment-bars")
+      stats ! Sentiment("bad")
+      expectMsg(BarsUpdate("testid", Map(
+        "excellent" -> 75f,
+        "good" -> 0f,
+        "neutral" -> 0f,
+        "bad" -> 25f,
+        "terrible" -> 0f)))
+      unsubscribe("testid:sentiment-bars")
     }
   }
 
   "A Folksonomy actor" should {
 
-    "publish correct folksonomies (1)" in {
-      subscribe("testid:folksonomy-total:add")
-      subscribe("testid:folksonomy-excellent:add")
-      folksonomy ! FolksonomyWord("excellent", "word1")
-      expectMsg(FolksonomyUpdate("testid", "excellent", "add", "word1"))
-      //expectMsg(FolksonomyUpdate("testid", "global", "add", "word1")
-      unsubscribe("testid:folksonomy-total:add")
-      unsubscribe("testid:folksonomy-excellent:add")
+    "add and publish words to the global folksonomy" in {
+      subscribe("testid:folksonomy-global:add")
+      for (i <- 1 to 5) {
+        folksonomy ! FolksonomyWord("excellent", s"good word$i")
+        expectMsg(FolksonomyUpdate("testid", "global", "add", s"good word$i"))
+      }
+      unsubscribe("testid:folksonomy-global:add")
     }
+
+    "add and publish words to a specific sentiment folksonomy" in {
+      subscribe("testid:folksonomy-bad:add")
+      for (i <- 1 to 5) {
+        folksonomy ! FolksonomyWord("bad", s"word$i")
+        expectMsg(FolksonomyUpdate("testid", "bad", "add", s"word$i"))
+      }
+      unsubscribe("testid:folksonomy-bad:add")
+    }
+
+    "publish updates of only new top words" ignore {
+      subscribe("testid:folksonomy-global:add")
+      for (i <- 1 to 4) {
+        folksonomy ! FolksonomyWord("bad", s"word$i")
+        expectNoMsg(200 milliseconds)
+      }
+      unsubscribe("testid:folksonomy-global:add")
+    }
+
+    "publish updates of downgraded words" ignore {
+      subscribe("testid:folksonomy-bad:remove")
+      folksonomy ! FolksonomyWord("bad", "word6")
+      expectNoMsg(200 milliseconds)
+      folksonomy ! FolksonomyWord("bad", "word6")
+      expectMsg(FolksonomyUpdate("testid", "bad", "remove", "word5"))
+      unsubscribe("testid:folksonomy-bad:remove")
+    }
+
   }
 }
