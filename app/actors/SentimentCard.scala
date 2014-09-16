@@ -16,11 +16,7 @@ object SentimentCard {
 
   case object CommentAck
 
-  case class CommentData (sentiment: String, folksonomies: Map[String, Array[String]])
-
-  case class Sentiment (sentiment: String) 
-
-  case class Folksonomies (folksonomies: Map[String, Array[String]])
+  case class CommentData (sentiment: String, folksonomies: Map[String, Map[String, Int]])
 
   def props (id: String, name: String): Props = 
     Props(new SentimentCard(id: String, name: String))
