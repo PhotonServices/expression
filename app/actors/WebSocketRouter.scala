@@ -70,9 +70,11 @@ class WebSocketRouter (out: ActorRef) extends Actor with ActorLogging {
     ClientOut,
     TestEvent}
 
-  import SentimentCard.{
+  import SentimentCardsManager.{
     CardNew,
-    CardDelete,
+    CardDelete}
+
+  import SentimentCard.{
     Comment}
 
   import SentimentStats.{

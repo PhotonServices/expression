@@ -16,7 +16,7 @@ object Folksonomy {
 }
 
 /** Mantains a rank of top words. */
-class Folksonomy (card: String) extends Actor with ActorLogging {
+class Folksonomy (card: String) extends Actor {
 
   import scalaz.Scalaz._
   import akka.contrib.pattern.DistributedPubSubMediator.Publish

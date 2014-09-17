@@ -8,26 +8,25 @@ import akka.actor._
 
 object SentimentCard {
   
-  case class CardNew (id: String, name: String)
-
-  case class CardDelete (id: String)
-
   case class Comment (body: String)
 
   case object CommentAck
 
-  case class CommentData (sentiment: String, folksonomies: Map[String, Map[String, Int]])
+  case class CommentData (sentiment: String, folksonomies: List[String])
 
   def props (id: String, name: String): Props = 
     Props(new SentimentCard(id: String, name: String))
 }
 
-class SentimentCard (id: String, name: String) extends Actor with ActorLogging {
+class SentimentCard (id: String, name: String) extends Actor {
 
   import akka.contrib.pattern.DistributedPubSubMediator.Publish
-  import SentimentCard.{
+
+  import SentimentCardsManager.{
     CardNew,
-    CardDelete,
+    CardDelete}
+
+  import SentimentCard.{
     Comment,
     CommentAck
   }

@@ -8,6 +8,10 @@ import akka.actor._
 
 object SentimentCardsManager {
 
+  case class CardNew (id: String, name: String)
+
+  case class CardDelete (id: String)
+
   /** Constructor for [[SentimentCardsManager]] actor props. 
    *
    * @return Props of SentimentCardsManager. 
@@ -18,7 +22,7 @@ object SentimentCardsManager {
 class SentimentCardsManager extends Actor with ActorLogging {
 
   import akka.actor.PoisonPill
-  import SentimentCard.{
+  import SentimentCardsManager.{
     CardNew,
     CardDelete
   }
