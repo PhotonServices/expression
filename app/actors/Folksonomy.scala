@@ -18,10 +18,9 @@ object Folksonomy {
 /** Mantains a rank of top words. */
 class Folksonomy (card: String) extends Actor with ActorLogging {
 
+  import scalaz.Scalaz._
   import akka.contrib.pattern.DistributedPubSubMediator.Publish
-  import collection.mutable.{
-    Map,
-    Set}
+  import collection.mutable.Set
   import Folksonomy.{
     FolksonomyUpdate,
     FolksonomyWord}
@@ -38,14 +37,17 @@ class Folksonomy (card: String) extends Actor with ActorLogging {
     "bad" -> Set(),
     "terrible" -> Set())
 
-  val global = Map[Sentiment, Map[Word, Hits]](
-    "excellent" -> Map(),
-    "good" -> Map(),
-    "neutral" -> Map(),
-    "bad" -> Map(),
-    "terrible" -> Map())
+  val global = Map[Sentiment, collection.mutable.Map[Word, Hits]](
+    "excellent" -> collection.mutable.Map(),
+    "good" -> collection.mutable.Map(),
+    "neutral" -> collection.mutable.Map(),
+    "bad" -> collection.mutable.Map(),
+    "terrible" -> collection.mutable.Map())
 
   val threshold = 5
+
+  def flatGlobal: Map[Word, Hits] =
+    global.foldLeft(Map.empty[Word, Hits])(_ |+| _._2.toMap)
 
   def addWord (word: Word, sentiment: Sentiment) =
     global(sentiment)(word) = global(sentiment).getOrElse(word, 0) + 1
@@ -53,7 +55,7 @@ class Folksonomy (card: String) extends Actor with ActorLogging {
   def checkLocalPromotion (word: Word, sentiment: Sentiment) =
     if (top(sentiment).size < threshold)
       promoteLocal(word, sentiment)
-    else if (!isTopLocal(word, sentiment) && top(sentiment)(word) > top(sentiment)(lessHittedLocal(sentiment))) {
+    else if (!isTopLocal(word, sentiment) && global(sentiment)(word) > global(sentiment)(lessHittedLocal(sentiment))) {
       promoteLocal(word, sentiment)
       demoteLocal(lessHittedLocal(sentiment), sentiment)
     }
@@ -61,7 +63,7 @@ class Folksonomy (card: String) extends Actor with ActorLogging {
   def checkGlobalPromotion (word: Word) =
     if (top("global").size < threshold)
       promoteGlobal(word)
-    else if (!isTopGlobal(word) && top("global")(word) > top("global")(lessHittedGlobal)) {
+    else if (!isTopGlobal(word) && flatGlobal(word) > flatGlobal(lessHittedGlobal)) {
       promoteGlobal(word)
       demoteGlobal(lessHittedGlobal)
     }
@@ -74,7 +76,7 @@ class Folksonomy (card: String) extends Actor with ActorLogging {
 
   def lessHittedGlobal: Word =
     top("global").foldLeft(top("global").head) { (x, word) =>
-      if (global("global")(word) < global("global")(x)) word
+      if (flatGlobal(word) < flatGlobal(x)) word
       else x
     }
 
@@ -85,23 +87,23 @@ class Folksonomy (card: String) extends Actor with ActorLogging {
     top("global").contains(word)
 
   def promoteLocal (word: Word, sentiment: Sentiment) = {
-    sendUpdate("add", word, sentiment)
     top(sentiment) += word
+    sendUpdate("add", word, sentiment)
   }
 
   def promoteGlobal (word: Word) = {
-    sendUpdate("add", word, "global")
     top("global") += word
+    sendUpdate("add", word, "global")
   }
 
   def demoteLocal (word: Word, sentiment: Sentiment) = {
-    sendUpdate("remove", word, sentiment)
     top(sentiment) -= word
+    sendUpdate("remove", word, sentiment)
   }
 
   def demoteGlobal (word: Word) = {
-    sendUpdate("remove", word, "global")
     top("global") -= word
+    sendUpdate("remove", word, "global")
   }
 
   def sendUpdate(action: String, word: Word, sentiment: Sentiment) =

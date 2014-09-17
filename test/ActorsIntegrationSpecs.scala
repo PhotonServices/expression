@@ -230,19 +230,19 @@ with BeforeAndAfterAll {
       unsubscribe("testid:folksonomy-bad:add")
     }
 
-    "publish updates of only new top words" ignore {
-      subscribe("testid:folksonomy-global:add")
+    "publish updates of only new top words" in {
+      subscribe("testid:folksonomy-bad:add")
       for (i <- 1 to 4) {
         folksonomy ! FolksonomyWord("bad", s"word$i")
-        expectNoMsg(200 milliseconds)
+        expectNoMsg(100 milliseconds)
       }
-      unsubscribe("testid:folksonomy-global:add")
+      unsubscribe("testid:folksonomy-bad:add")
     }
 
-    "publish updates of downgraded words" ignore {
+    "publish updates of downgraded words" in {
       subscribe("testid:folksonomy-bad:remove")
       folksonomy ! FolksonomyWord("bad", "word6")
-      expectNoMsg(200 milliseconds)
+      expectNoMsg(100 milliseconds)
       folksonomy ! FolksonomyWord("bad", "word6")
       expectMsg(FolksonomyUpdate("testid", "bad", "remove", "word5"))
       unsubscribe("testid:folksonomy-bad:remove")
