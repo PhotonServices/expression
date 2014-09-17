@@ -3,6 +3,8 @@
  */
 
 import scala.concurrent.duration._
+import play.api.Play
+import play.api.test.FakeApplication
 import play.api.libs.json._
 
 import akka.contrib.pattern.DistributedPubSubMediator.{
@@ -33,18 +35,22 @@ import actors.{
   SentimentCardsManager,
   SentimentCard,
   SentimentStats,
-  Folksonomy}
+  Folksonomy,
+  SentimentAPIRequester}
 
 import WebSocketRouter.{
   ClientIn,
   ClientOut,
   TestEvent}
 
-import SentimentCard.{
+import SentimentCardsManager.{
   CardNew,
-  CardDelete,
+  CardDelete}
+
+import SentimentCard.{
   Comment,
-  CommentAck}
+  CommentAck,
+  CommentData}
 
 import SentimentStats.{
   Sentiment,
@@ -56,6 +62,9 @@ import Folksonomy.{
   FolksonomyWord,
   FolksonomyUpdate}
 
+import SentimentAPIRequester.{
+  APIRequest}
+
 class ActorsIntegrationSpec (_system: ActorSystem) extends TestKit(_system) 
 with ImplicitSender
 with WordSpecLike 
@@ -63,12 +72,16 @@ with Matchers
 with BeforeAndAfterAll {
 
   import system.dispatcher
+
   var router: ActorRef = _
   var manager: ActorRef = _
   var testCard: ActorRef = _
   var testCardId: String = _
   var stats: ActorRef = _
   var folksonomy: ActorRef = _
+  var sentimentApi: ActorRef = _
+
+  Play.start(FakeApplication())
 
   def this() = this(ActorSystem("ActorsIntegrationSpecsSystem"))
 
@@ -83,11 +96,11 @@ with BeforeAndAfterAll {
   }
 
   override def beforeAll {
-    Actors(system)
     router = system.actorOf(WebSocketRouter.props(self))
     manager = Actors.sentimentCardsManager
     stats = system.actorOf(SentimentStats.props("testid"))
     folksonomy = system.actorOf(Folksonomy.props("testid"))
+    sentimentApi = system.actorOf(SentimentAPIRequester.props(self))
   }
 
   override def afterAll {
@@ -171,7 +184,6 @@ with BeforeAndAfterAll {
       expectMsg(CardDelete("test-id"))
       unsubscribe("card-delete")
     }
-
   }
 
   "A SentimentStats actor" should {
@@ -247,6 +259,13 @@ with BeforeAndAfterAll {
       expectMsg(FolksonomyUpdate("testid", "bad", "remove", "word5"))
       unsubscribe("testid:folksonomy-bad:remove")
     }
+  }
 
+  "A SentimentAPIRequester actor" should {
+
+    "request to the sentiment service" in {
+      sentimentApi ! APIRequest("El servicio es excelente.")
+      expectMsg(CommentData("excellent", List("servicio")))
+    }
   }
 }
