@@ -8,9 +8,9 @@ import akka.actor._
 
 object SentimentCardsManager {
 
-  /** Constructor for [[SentimentCardsManager]] ActorRefs. 
+  /** Constructor for [[SentimentCardsManager]] actor props. 
    *
-   * @return an ActorRef of SentimentCardsManager. 
+   * @return Props of SentimentCardsManager. 
    */
   def props: Props = Props(new SentimentCardsManager)
 }

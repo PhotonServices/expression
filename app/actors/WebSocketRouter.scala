@@ -37,10 +37,10 @@ object WebSocketRouter {
     implicit val messageFrameFormater = FrameFormatter.jsonFrame[ClientOut]
   }
 
-  /** Constructor for [[WebSocketRouter]] ActorRefs. 
+  /** Constructor for [[WebSocketRouter]] actor props. 
    *
    * @param out actor which handles messages to the client. 
-   * @return an ActorRef of WebSocketRouter. 
+   * @return Props of WebSocketRouter. 
    */
   def props(out: ActorRef) = Props(new WebSocketRouter(out))
 }
