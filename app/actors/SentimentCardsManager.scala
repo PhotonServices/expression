@@ -33,7 +33,9 @@ class SentimentCardsManager extends Actor with ActorLogging {
     context.actorOf(SentimentCard.props(id, name), id)
 
   def receive = {
-    case CardNew(_, name) => createSentimentCard(genId, name)
+    case CardNew(_, name) => 
+      createSentimentCard(genId, name)
+
     case CardDelete(id) => context.child(id) match {
       case Some(child) => child ! PoisonPill
       case None => log.info("Tried to kill {} but was already dead.")

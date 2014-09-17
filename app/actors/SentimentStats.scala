@@ -23,6 +23,7 @@ class SentimentStats (id: String) extends Actor with ActorLogging {
 
   import akka.contrib.pattern.DistributedPubSubMediator.Publish
   import collection.mutable.Map
+
   import SentimentStats.{
     Sentiment,
     SentimentUpdate,

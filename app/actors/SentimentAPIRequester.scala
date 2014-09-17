@@ -10,8 +10,6 @@ import play.api.libs.json._
 
 object SentimentAPIRequester {
 
-  case class APIRequest (comment: String)
-
   /** Constructor for [[SentimentAPIRequester]] actor props. */
   def props (receptor: ActorRef): Props = 
     Props(new SentimentAPIRequester(receptor: ActorRef))
@@ -26,8 +24,9 @@ class SentimentAPIRequester (receptor: ActorRef) extends Actor {
   import play.api.libs.ws.ning.NingAsyncHttpClientConfigBuilder
   import scala.concurrent.Future
 
-  import SentimentAPIRequester.APIRequest
-  import SentimentCard.CommentData
+  import SentimentCard.{
+    Comment,
+    CommentData}
 
   def serviceURL = current.configuration.getString("sentiment.service") match {
     case Some(url) => url
@@ -66,7 +65,7 @@ class SentimentAPIRequester (receptor: ActorRef) extends Actor {
   }
 
   def receive = {
-    case APIRequest(comment) => request(comment) map { response => 
+    case Comment(comment) => request(comment) map { response => 
       val sentiment = sentimentToString((response.json \ "Overall Sentiment").as[Float])
       val data = (response.json \ "folksonomies").as[Array[Map[String, Map[String, Int]]]]
       val mapa = (data.flatMap(x=>x).toMap)

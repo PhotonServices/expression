@@ -62,9 +62,6 @@ import Folksonomy.{
   FolksonomyWord,
   FolksonomyUpdate}
 
-import SentimentAPIRequester.{
-  APIRequest}
-
 class ActorsIntegrationSpec (_system: ActorSystem) extends TestKit(_system) 
 with ImplicitSender
 with WordSpecLike 
@@ -173,11 +170,6 @@ with BeforeAndAfterAll {
       unsubscribe("card-new")
     }
 
-    "receive a comment" in {
-      testCard ! Comment("test")
-      expectMsg(CommentAck)
-    }
-
     "publish deletion" in {
       subscribe("card-delete")
       testCard ! PoisonPill
@@ -263,8 +255,8 @@ with BeforeAndAfterAll {
 
   "A SentimentAPIRequester actor" should {
 
-    "request to the sentiment service" in {
-      sentimentApi ! APIRequest("El servicio es excelente.")
+    "request to the sentiment service (needs an active sentiment service)" in {
+      sentimentApi ! Comment("El servicio es excelente.")
       expectMsg(CommentData("excellent", List("servicio")))
     }
   }

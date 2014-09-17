@@ -8,7 +8,7 @@ import akka.actor._
 
 object SentimentCard {
   
-  case class Comment (body: String)
+  case class Comment (comment: String)
 
   case object CommentAck
 
@@ -28,8 +28,14 @@ class SentimentCard (id: String, name: String) extends Actor {
 
   import SentimentCard.{
     Comment,
-    CommentAck
-  }
+    CommentAck,
+    CommentData}
+
+  import SentimentStats.{
+    Sentiment}
+
+  import Folksonomy.{
+    FolksonomyWord}
 
   val stats = context.actorOf(SentimentStats.props(id), "stats")
 
@@ -39,8 +45,25 @@ class SentimentCard (id: String, name: String) extends Actor {
 
   override def postStop () = Actors.mediator ! Publish("card-delete", CardDelete(id))
 
+  def genId: String = java.util.UUID.randomUUID.toString
+
+  def processComment (comment: Comment) =
+      context.actorOf(SentimentAPIRequester.props(self), genId).forward(comment)
+
+  def processSentiment (sentiment: String) =
+    stats ! Sentiment(sentiment)
+
+  def processFolksonomy (sentiment: String, folklist: List[String]) =
+    folklist foreach { word => folksonomy ! FolksonomyWord(sentiment, word) }
+
   def receive = {
-    case Comment(body) => sender ! CommentAck
+    case msg: Comment => 
+      sender ! CommentAck
+      processComment(msg)
+
+    case CommentData(sentiment, folklist) =>
+      processSentiment(sentiment)
+      processFolksonomy(sentiment, folklist)
   }
 
 }
