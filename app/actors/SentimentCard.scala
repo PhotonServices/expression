@@ -40,9 +40,9 @@ class SentimentCard (id: String, name: String) extends Actor {
   import Folksonomy.{
     FolksonomyWord}
 
-  val stats = context.actorOf(SentimentStats.props(id), "stats")
+  val stats = context.actorOf(SentimentStats.props(id), s"$id:stats")
 
-  val folksonomy = context.actorOf(Folksonomy.props(id), "folksonomy")
+  val folksonomy = context.actorOf(Folksonomy.props(id), s"$id:folksonomy")
 
   override def preStart () = Actors.mediator ! Publish("card-new", CardNew(id, name))
 
