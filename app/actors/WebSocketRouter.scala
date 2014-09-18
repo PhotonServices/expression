@@ -22,6 +22,9 @@ object WebSocketRouter {
   /** Message to test the event mediator. */
   case class TestEvent (data: String)
 
+  /** Message to catch client subscriptions. */
+  case class ClientSubscription (event: String, socket: ActorRef)
+
   /** [[ClientIn]] companion which holds the formaters needed to convert from json. */
   object ClientIn {
     implicit val messageFormater = Json.format[ClientIn]
@@ -63,12 +66,14 @@ class WebSocketRouter (out: ActorRef) extends Actor with ActorLogging {
     Subscribe,
     SubscribeAck,
     Unsubscribe,
-    UnsubscribeAck}
+    UnsubscribeAck,
+    Publish}
 
   import WebSocketRouter.{
     ClientIn, 
     ClientOut,
-    TestEvent}
+    TestEvent,
+    ClientSubscription}
 
   import SentimentCardsManager.{
     CardNew,
@@ -128,7 +133,9 @@ class WebSocketRouter (out: ActorRef) extends Actor with ActorLogging {
 
   /** Messages to the events mediator. */
   private def messageToMediator (message: String, content: String) = message match {
-    case "subscribe" => Actors.mediator ! Subscribe(content, self)
+    case "subscribe" => 
+      Actors.mediator ! Publish(s"client-subscription:$content", ClientSubscription(content, self))
+      Actors.mediator ! Subscribe(content, self)
     case "unsubscribe" => Actors.mediator ! Unsubscribe(content, self)
     case _ => error(s"No such message $message.")
   }
@@ -189,7 +196,7 @@ class WebSocketRouter (out: ActorRef) extends Actor with ActorLogging {
 
     case BarsUpdate(card, bars) => 
       emit(s"$card:sentiment-bars", Json.toJson(bars)) 
-    
+
     case FolksonomyUpdate(card, sentiment, action, word) =>
       emit(s"$card:folksonomy-$sentiment:$action", Json.toJson(word))
   }

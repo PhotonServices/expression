@@ -21,6 +21,7 @@ class Folksonomy (card: String) extends Actor {
   import scalaz.Scalaz._
   import akka.contrib.pattern.DistributedPubSubMediator.Publish
   import collection.mutable.Set
+
   import Folksonomy.{
     FolksonomyUpdate,
     FolksonomyWord}

@@ -41,7 +41,8 @@ import actors.{
 import WebSocketRouter.{
   ClientIn,
   ClientOut,
-  TestEvent}
+  TestEvent,
+  ClientSubscription}
 
 import SentimentCardsManager.{
   CardNew,
@@ -104,6 +105,12 @@ with BeforeAndAfterAll {
     TestKit.shutdownActorSystem(system)
   }
 
+  /** 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   * S1: WebSocketRouter 
+   *
+   *
+   */
   "A WebSocketRouter" should {
 
     "echo to the client" in {
@@ -141,8 +148,14 @@ with BeforeAndAfterAll {
     }
   }
 
-  "The SentimentCardManager" should {
-    
+  /** 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   * S2: SentimentCardsManager
+   *
+   *
+   */
+  "The SentimentCardsManager" should {
+
     "create a new SentimentCard" in {
       subscribe("card-new")
       manager ! CardNew("", "Testing Card")
@@ -159,10 +172,32 @@ with BeforeAndAfterAll {
       assert(id == testCardId)
       unsubscribe("card-delete")
     }
+
+    "deliver all the created cards on 'card-new' subscription" in {
+      subscribe("card-new")
+      for (i <- 1 to 5)
+        manager ! CardNew("", s"card$i")
+      receiveN(5, 200 milliseconds) foreach {
+        case message: CardNew => // Good
+        case _ => fail("Did not receive a CardNew message on cards creation.")
+      }
+      unsubscribe("card-new")
+      Actors.mediator ! Publish("client-subscription:card-new", ClientSubscription("card-new", self))
+      receiveN(5, 200 milliseconds) foreach {
+        case message: CardNew => // Good
+        case _ => fail("Did not receive a Cardnew message on client subscription.")
+      }
+    }
   }
 
+  /** 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   * S3: SentimentCard
+   *
+   *
+   */
   "A SentimentCard" should {
-  
+
     "publish creation" in {
       subscribe("card-new")
       testCard = system.actorOf(SentimentCard.props("test-id", "test-card"), "test-id")
@@ -178,6 +213,12 @@ with BeforeAndAfterAll {
     }
   }
 
+  /** 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   * S4: SentimentStats
+   *
+   *
+   */
   "A SentimentStats actor" should {
 
     "calculate and publish final sentiment" in {
@@ -214,6 +255,12 @@ with BeforeAndAfterAll {
     }
   }
 
+  /** 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   * S5: Folksonomy
+   *
+   *
+   */
   "A Folksonomy actor" should {
 
     "add and publish words to the global folksonomy" in {
@@ -253,9 +300,15 @@ with BeforeAndAfterAll {
     }
   }
 
+  /** 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   * S6: SentimentAPIRequester
+   *
+   *
+   */
   "A SentimentAPIRequester actor" should {
 
-    "request to the sentiment service (needs an active sentiment service)" in {
+    "request to the sentiment service (needs an active sentiment service)" ignore {
       sentimentApi ! Comment("El servicio es excelente.")
       expectMsg(CommentData("excellent", List("servicio")))
     }
