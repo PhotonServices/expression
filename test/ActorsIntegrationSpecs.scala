@@ -253,6 +253,15 @@ with BeforeAndAfterAll {
         "terrible" -> 0f)))
       unsubscribe("testid:sentiment-bars")
     }
+
+    "deliver latest sentiment on client subscription" in {
+    }
+
+    "deliver latest amount on client subscription" in {
+    }
+
+    "deliver latest bars on client subscription" in {
+    }
   }
 
   /** 
