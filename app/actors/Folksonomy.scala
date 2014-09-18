@@ -19,12 +19,22 @@ object Folksonomy {
 class Folksonomy (card: String) extends Actor {
 
   import scalaz.Scalaz._
-  import akka.contrib.pattern.DistributedPubSubMediator.Publish
   import collection.mutable.Set
+
+  import akka.contrib.pattern.DistributedPubSubMediator.{
+    Subscribe,
+    Publish}
 
   import Folksonomy.{
     FolksonomyUpdate,
     FolksonomyWord}
+
+  import play.api.Play.current
+
+  val threshold = current.configuration.getInt("sentiment.folksonomy.threshold") match {
+    case Some(value) => value
+    case None => throw new Exception("Expected 'sentiment.folksonomy.threshold' configuration option in the play framework configuration file.")
+  }
 
   type Sentiment = String
   type Word = String
@@ -44,8 +54,6 @@ class Folksonomy (card: String) extends Actor {
     "neutral" -> collection.mutable.Map(),
     "bad" -> collection.mutable.Map(),
     "terrible" -> collection.mutable.Map())
-
-  val threshold = 5
 
   def flatGlobal: Map[Word, Hits] =
     global.foldLeft(Map.empty[Word, Hits])(_ |+| _._2.toMap)
