@@ -321,6 +321,19 @@ with BeforeAndAfterAll {
       expectMsg(FolksonomyUpdate("testid", "bad", "remove", "word5"))
       unsubscribe("testid:folksonomy-bad:remove")
     }
+
+    "deliver latest folksonomies on client subscription" in {
+      publishClientSub("testid:folksonomy-bad:add")
+      receiveN(5, 200 milliseconds) foreach {
+        case FolksonomyUpdate(card, sentiment, action, word) =>
+          assert(card == "testid")
+          assert(sentiment == "bad")
+          assert(action == "add")
+          assert(Set("word1", "word2", "word3", "word4", "word6") contains word)
+        case _ => 
+          fail("Did not receive a FolksonomyUpdate message on client subscription.")
+      }
+    }
   }
 
   /** 

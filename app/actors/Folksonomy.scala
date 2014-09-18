@@ -20,16 +20,18 @@ class Folksonomy (card: String) extends Actor {
 
   import scalaz.Scalaz._
   import collection.mutable.Set
+  import play.api.Play.current
 
   import akka.contrib.pattern.DistributedPubSubMediator.{
     Subscribe,
     Publish}
 
+  import WebSocketRouter.{
+    ClientSubscription}
+
   import Folksonomy.{
     FolksonomyUpdate,
     FolksonomyWord}
-
-  import play.api.Play.current
 
   val threshold = current.configuration.getInt("sentiment.folksonomy.threshold") match {
     case Some(value) => value
@@ -57,6 +59,11 @@ class Folksonomy (card: String) extends Actor {
 
   def flatGlobal: Map[Word, Hits] =
     global.foldLeft(Map.empty[Word, Hits])(_ |+| _._2.toMap)
+
+  override def preStart() =
+    top.foreach { case (sentiment, set) =>
+      Actors.mediator ! Subscribe(s"client-subscription:$card:folksonomy-$sentiment:add", self)
+    }
 
   def addWord (word: Word, sentiment: Sentiment) =
     global(sentiment)(word) = global(sentiment).getOrElse(word, 0) + 1
@@ -116,13 +123,20 @@ class Folksonomy (card: String) extends Actor {
   }
 
   def sendUpdate(action: String, word: Word, sentiment: Sentiment) =
-    Actors.mediator ! Publish(s"$card:folksonomy-$sentiment:$action", FolksonomyUpdate (card, sentiment, action, word))
+    Actors.mediator ! Publish(s"$card:folksonomy-$sentiment:$action", FolksonomyUpdate(card, sentiment, action, word))
+
+  val SentimentRegExp = """.*folksonomy-(excellent|good|neutral|bad|terrible|global):add""".r
 
   def receive = {
     case FolksonomyWord(sentiment, word) => 
       addWord(word, sentiment)
       checkLocalPromotion(word, sentiment)
       checkGlobalPromotion(word)
+
+    case ClientSubscription(event, socket) => event match {
+      case SentimentRegExp(sentiment)  =>
+        top(sentiment) foreach (socket ! FolksonomyUpdate(card, sentiment, "add", _))
+    }
   }
 }
 
