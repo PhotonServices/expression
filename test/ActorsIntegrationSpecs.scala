@@ -93,6 +93,9 @@ with BeforeAndAfterAll {
     receiveOne(200 milliseconds) // UnsubscribeAck
   }
 
+  def publishClientSub (event: String) = 
+      Actors.mediator ! Publish(s"client-subscription:$event", ClientSubscription(event, self))
+
   override def beforeAll {
     router = system.actorOf(WebSocketRouter.props(self))
     manager = Actors.sentimentCardsManager
@@ -182,7 +185,7 @@ with BeforeAndAfterAll {
         case _ => fail("Did not receive a CardNew message on cards creation.")
       }
       unsubscribe("card-new")
-      Actors.mediator ! Publish("client-subscription:card-new", ClientSubscription("card-new", self))
+      publishClientSub("card-new")
       receiveN(5, 200 milliseconds) foreach {
         case message: CardNew => // Good
         case _ => fail("Did not receive a Cardnew message on client subscription.")
@@ -255,12 +258,23 @@ with BeforeAndAfterAll {
     }
 
     "deliver latest sentiment on client subscription" in {
+      publishClientSub("testid:sentiment-final")
+      expectMsg(SentimentUpdate("testid", 1.25f))
     }
 
     "deliver latest amount on client subscription" in {
+      publishClientSub("testid:count-total")
+      expectMsg(AmountUpdate("testid", "total", 4))
     }
 
     "deliver latest bars on client subscription" in {
+      publishClientSub("testid:sentiment-bars")
+      expectMsg(BarsUpdate("testid", Map(
+        "excellent" -> 75f,
+        "good" -> 0f,
+        "neutral" -> 0f,
+        "bad" -> 25f,
+        "terrible" -> 0f)))
     }
   }
 

@@ -55,7 +55,7 @@ class SentimentStats (card: String) extends Actor with ActorLogging {
 
   override def preStart() = {
     Actors.mediator ! Subscribe(s"client-subscription:$card:sentiment-final", self)
-    Actors.mediator ! Subscribe(s"client-subscription:$card:sentiment-sentimentBars", self)
+    Actors.mediator ! Subscribe(s"client-subscription:$card:sentiment-bars", self)
     amounts.foreach { case (sentiment, amount) =>
       Actors.mediator ! Subscribe(s"client-subscription:$card:count-$sentiment", self)
     }
@@ -89,7 +89,7 @@ class SentimentStats (card: String) extends Actor with ActorLogging {
     Actors.mediator ! Publish(s"$card:sentiment-bars", BarsUpdate(card, sentimentBars.toMap))
   }
 
-  private val FinalBarsRegExp = """.*:sentiment-(final|stats)""".r
+  private val FinalBarsRegExp = """.*:sentiment-(final|bars)""".r
 
   private val SentimentRegExp = """.*count-(excellent|good|neutral|bad|terrible|total)""".r
 
@@ -105,7 +105,7 @@ class SentimentStats (card: String) extends Actor with ActorLogging {
         if (update == "final")
           socket ! SentimentUpdate(card, sentimentFinal)
         else
-        socket ! BarsUpdate(card, sentimentBars.toMap)
+          socket ! BarsUpdate(card, sentimentBars.toMap)
       case SentimentRegExp(sentiment)  =>
         socket ! AmountUpdate(card, sentiment, amounts(sentiment))
     }
