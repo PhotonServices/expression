@@ -50,7 +50,6 @@ import SentimentCardsManager.{
 
 import SentimentCard.{
   Comment,
-  CommentAck,
   CommentData}
 
 import SentimentStats.{

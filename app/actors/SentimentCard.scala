@@ -10,8 +10,6 @@ object SentimentCard {
   
   case class Comment (comment: String)
 
-  case object CommentAck
-
   case class CommentData (sentiment: String, folksonomies: List[String])
 
   def props (id: String, name: String): Props = 
@@ -31,7 +29,6 @@ class SentimentCard (id: String, name: String) extends Actor {
 
   import SentimentCard.{
     Comment,
-    CommentAck,
     CommentData}
 
   import SentimentStats.{
@@ -61,7 +58,6 @@ class SentimentCard (id: String, name: String) extends Actor {
 
   def receive = {
     case msg: Comment => 
-      sender ! CommentAck
       processComment(msg)
 
     case CommentData(sentiment, folklist) =>
