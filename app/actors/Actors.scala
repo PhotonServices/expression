@@ -8,8 +8,10 @@ import play.api._
 import play.api.libs.concurrent.Akka
 import akka.actor.ActorSystem
 
-/** Gives access to global actors, like the Sentiment Cards Manager or the mediator
- *  used for publish/subscribe events. 
+/** Gives access to global actors: 
+ *
+ *  The sentiment cards manager: used to control creation and deletion of sentiment cards, actor of [[actors.SentimentCardsManager]].
+ *  The mediator: used for publish/subscribe events. 
  */
 object Actors {
 
@@ -45,6 +47,27 @@ object Actors {
     else customSysManager
 }
 
+/** Play framework plugin 'Actor', used to globally access important 
+ *  actors through this plugin's companion object.
+ *
+ *  The companion object must be initialized with a playframework app
+ *  or with an actor system. In production this plugin is initialized
+ *  at the [[Global]] object in the 'onStart' hook.
+ *
+ *  The companion object gives direct access to this global actors:
+ *
+ *  (1) The sentiment cards manager: used to control creation and 
+ *  deletion of sentiment cards, actor of [[actors.SentimentCardsManager]].
+ *
+ *  (2) The mediator: used for publish/subscribe events.
+ *
+ *  The publish/subscribe system is done with the DistributedPubSubExtension 
+ *  located in the akka contributions packages.
+ *
+ * @see [[http://doc.akka.io/api/akka/2.2.3/index.html#akka.contrib.pattern.DistributedPubSubMediator DistributedPubSubExtension api.]]
+ * @see [[http://doc.akka.io/docs/akka/2.2.3/contrib/distributed-pub-sub.html DistributedPubSubExtension documentation]] to understand the usage of this akka extension.
+ * @see [[https://www.playframework.com/documentation/2.3.x/ScalaPlugins ScalaPlugins documentation]] for more information about the programming of ScalaPlugins.
+ */
 class Actors(app: Application) extends Plugin {
 
   /** The mediator actor which handles publishings and subscriptions. */

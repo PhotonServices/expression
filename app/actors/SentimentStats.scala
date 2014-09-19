@@ -6,6 +6,9 @@ package actors
 
 import akka.actor._
 
+/** Companion object with all the messages that involves 
+ *  interaction with this actor.
+ */
 object SentimentStats {
 
   case class Sentiment (sentiment: String) 
@@ -19,7 +22,10 @@ object SentimentStats {
   def props (card: String): Props = Props(new SentimentStats(card))
 }
 
-class SentimentStats (card: String) extends Actor with ActorLogging {
+/** Mantains the general statistics of the sentiment of
+ *  a sentiment card.
+ */
+class SentimentStats (card: String) extends Actor {
 
   import collection.mutable.Map
 
@@ -36,16 +42,16 @@ class SentimentStats (card: String) extends Actor with ActorLogging {
     AmountUpdate,
     BarsUpdate}
 
-  private var sentimentFinal = 0f
+  var sentimentFinal = 0f
 
-  private val sentimentBars = Map(
+  val sentimentBars = Map(
     "excellent" -> 0f,
     "good" -> 0f,
     "neutral" -> 0f,
     "bad" -> 0f,
     "terrible" -> 0f)
 
-  private val amounts = Map(
+  val amounts = Map(
     "total" -> 0,
     "excellent" -> 0,
     "good" -> 0,
@@ -61,12 +67,12 @@ class SentimentStats (card: String) extends Actor with ActorLogging {
     }
   }
 
-  private def recalculateSentimentAmount (sentiment: String) = {
+  def recalculateSentimentAmount (sentiment: String) = {
     amounts(sentiment) = amounts(sentiment) + 1 
     Actors.mediator ! Publish(s"$card:count-$sentiment", AmountUpdate(card, sentiment, amounts(sentiment)))
   }
 
-  private def recalculateFinalSentiment = {
+  def recalculateFinalSentiment = {
     val lastSentiment = sentimentFinal
     sentimentFinal = amounts.foldLeft(0f) { 
       case (sum, (sentiment, num)) => sentiment match {
@@ -82,16 +88,16 @@ class SentimentStats (card: String) extends Actor with ActorLogging {
       Actors.mediator ! Publish(s"$card:sentiment-final", SentimentUpdate(card, sentimentFinal))
   }
 
-  private def recalculateSentimentBars = {
+  def recalculateSentimentBars = {
     amounts - "total" map {
       case (sentiment, num) => sentimentBars(sentiment) = num * 100f / amounts("total")
     }
     Actors.mediator ! Publish(s"$card:sentiment-bars", BarsUpdate(card, sentimentBars.toMap))
   }
 
-  private val FinalBarsRegExp = """.*:sentiment-(final|bars)""".r
+  val FinalBarsRegExp = """.*:sentiment-(final|bars)""".r
 
-  private val SentimentRegExp = """.*count-(excellent|good|neutral|bad|terrible|total)""".r
+  val SentimentRegExp = """.*count-(excellent|good|neutral|bad|terrible|total)""".r
 
   def receive = {
     case Sentiment(sentiment) => 

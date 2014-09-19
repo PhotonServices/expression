@@ -50,14 +50,20 @@ object WebSocketRouter {
 
 /** Actor which enroutes messages and events from and to the client.
  * 
- * The actor enroutes messages from web socket clients and delivers
- * events to which the client is subscribed. It also manages the
- * subscriptions to specific events which the client can subscribe to,
- * this way the client receives only the data it needs.
+ *  The actor enroutes messages from web socket clients and delivers
+ *  events to which the client is subscribed. It also manages the
+ *  subscriptions to specific events which the client can subscribe to,
+ *  this way the client receives only the data it needs.
  *
- * @constructor use the companion object method 'props'.
+ *  Each time the client subscribes to an event this actor also publishes
+ *  an other event with this format 'client-subscription:<event-name>',
+ *  publishing an [[actors.WebSocketRouter.ClientSubscription]] message.
+ *  this way other actors can be informed about clients subscribing to events,
+ *  so that the actors can push their most recent state.
+ *
+ * @see [[https://www.playframework.com/documentation/2.3.x/ScalaWebSockets Play Framework WebSockets documentation]] to further understand the functionality of this actor.   
  */
-class WebSocketRouter (out: ActorRef) extends Actor with ActorLogging {
+class WebSocketRouter (out: ActorRef) extends Actor {
 
   import context.dispatcher
   import scala.concurrent.duration._
@@ -91,24 +97,24 @@ class WebSocketRouter (out: ActorRef) extends Actor with ActorLogging {
     FolksonomyUpdate}
 
   /** Regular expression. */
-  private val ChildCardPattern = "^(.*)/(.*)".r
+  val ChildCardPattern = "^(.*)/(.*)".r
 
   /** Stores the object that can cancell the echo intervals. */
-  private var echoCanceller: Cancellable = null
+  var echoCanceller: Cancellable = null
 
   /** Send an event to the client. */
-  private def emit (event: String, data: JsValue) = out ! ClientOut(event, data)
+  def emit (event: String, data: JsValue) = out ! ClientOut(event, data)
 
   /** Send an error event to the client. */
-  private def error (description: String) = emit("error", Json.toJson(description))
+  def error (description: String) = emit("error", Json.toJson(description))
 
   /** Optional string to int. */
-  private def parseTime (int: String): Option[FiniteDuration] =
+  def parseTime (int: String): Option[FiniteDuration] =
     try { Some(int.toInt milliseconds) }
     catch { case _: Exception => None }
 
   /** Starts an interval with a time string of seconds. */
-  private def scheduleEcho (time: String): Option[Cancellable] = parseTime(time) match {
+  def scheduleEcho (time: String): Option[Cancellable] = parseTime(time) match {
     case Some(time) => Some(context.system.scheduler.schedule(
       0 milliseconds,
       time,
@@ -118,7 +124,7 @@ class WebSocketRouter (out: ActorRef) extends Actor with ActorLogging {
   }
 
   /** Messages to start an echo. */
-  private def messageToEchoer (message: String, content: String) = message match {
+  def messageToEchoer (message: String, content: String) = message match {
     case "interval" => 
       if (echoCanceller == null) scheduleEcho(content) match {
         case Some(canceller) => echoCanceller = canceller
@@ -132,7 +138,7 @@ class WebSocketRouter (out: ActorRef) extends Actor with ActorLogging {
   }
 
   /** Messages to the events mediator. */
-  private def messageToMediator (message: String, content: String) = message match {
+  def messageToMediator (message: String, content: String) = message match {
     case "subscribe" => 
       Actors.mediator ! Publish(s"client-subscription:$content", ClientSubscription(content, self))
       Actors.mediator ! Subscribe(content, self)
@@ -141,14 +147,14 @@ class WebSocketRouter (out: ActorRef) extends Actor with ActorLogging {
   }
 
   /** Messages to the sentiment cards manager. */
-  private def messageToManager (message: String, content: String) = message match {
+  def messageToManager (message: String, content: String) = message match {
     case "card-new" => Actors.sentimentCardsManager ! CardNew("", content)
     case "card-delete" => Actors.sentimentCardsManager ! CardDelete(content)
     case _ => error(s"No such message $message.")
   }
 
   /** Messages to sentiment cards. */
-  private def messageToCards (cards: ActorSelection, message: String, content: String) = message match {
+  def messageToCards (cards: ActorSelection, message: String, content: String) = message match {
     case "comment" => cards ! Comment(content)
     case _ => error(s"No such message $message.")
   }
