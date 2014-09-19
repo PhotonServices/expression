@@ -60,6 +60,9 @@ class SentimentCard (id: String, name: String) extends Actor {
 
   import akka.contrib.pattern.DistributedPubSubMediator.Publish
 
+  import akka.actor.{
+    PoisonPill}
+
   import WebSocketRouter.{
     ClientSubscription}
 
@@ -108,6 +111,7 @@ class SentimentCard (id: String, name: String) extends Actor {
     case CommentData(sentiment, folklist) =>
       processSentiment(sentiment)
       processFolksonomy(sentiment, folklist)
+      sender ! PoisonPill
 
     case ClientSubscription(event, socket) =>
       socket ! CardNew(id, name)
