@@ -79,7 +79,10 @@ with BeforeAndAfterAll {
   var folksonomy: ActorRef = _
   var sentimentApi: ActorRef = _
 
-  Play.start(FakeApplication())
+  Play.start(FakeApplication(additionalConfiguration = Map(
+    "sentiment.service" -> "http://localhost:8000/comments",
+    "sentiment.folksonomy.threshold" -> 5
+  )))
 
   def this() = this(ActorSystem("ActorsIntegrationSpecsSystem"))
 
