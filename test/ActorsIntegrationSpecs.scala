@@ -36,7 +36,8 @@ import actors.{
   SentimentCard,
   SentimentStats,
   Folksonomy,
-  SentimentAPIRequester}
+  SentimentAPIRequester,
+  Demoer}
 
 import WebSocketRouter.{
   ClientIn,
@@ -61,6 +62,9 @@ import SentimentStats.{
 import Folksonomy.{
   FolksonomyWord,
   FolksonomyUpdate}
+
+import Demoer.{
+  Commands}
 
 class ActorsIntegrationSpec (_system: ActorSystem) extends TestKit(_system) 
 with ImplicitSender
@@ -349,6 +353,26 @@ with BeforeAndAfterAll {
     "request to the sentiment service (needs an active sentiment service)" ignore {
       sentimentApi ! Comment("El servicio es excelente.")
       expectMsg(CommentData("excellent", List("servicio")))
+    }
+  }
+
+  /** 
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   * S7: Demoer
+   *
+   *
+   */
+  "The Demoer actor" should {
+
+    "Schedule new cards" in {
+      subscribe("card-new")
+      val name = "Test Card"
+      Actors.demoer ! Commands(Array(
+        "1 new >>> Test Card"))
+      val CardNew(id, rname) = receiveOne(1200 milliseconds)
+      assert(id == name.replace(' ', '-'))
+      assert(rname == name)
+      unsubscribe("card-new")
     }
   }
 }

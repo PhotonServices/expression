@@ -27,6 +27,9 @@ object Actors {
   /** The manager actor (with custom actor system) which handles the creation and deletion of sentiment cards. */
   private lazy val customSysManager = customSys.actorOf(SentimentCardsManager.props, "cards-manager")
 
+  /** An actor to create demos. */
+  private lazy val customSysDemoer = customSys.actorOf(Demoer.props, "demoer")
+
   /** Gets the 'Actors' play plugin. */
   private def actors = app.plugin[Actors].getOrElse(sys.error("Actors plugin not registered"))
 
@@ -45,6 +48,10 @@ object Actors {
   def sentimentCardsManager = 
     if (customSys == null) actors.sentimentCardsManager
     else customSysManager
+
+  def demoer =
+    if (customSys == null) actors.demoer
+    else customSysDemoer
 }
 
 /** Play framework plugin 'Actor', used to globally access important 
@@ -75,6 +82,9 @@ class Actors(app: Application) extends Plugin {
 
   /** The manager actor which handles the creation and deletion of sentiment cards. */
   private lazy val sentimentCardsManager = system.actorOf(SentimentCardsManager.props, "cards-manager")
+
+  /** An actor to create demos. */
+  private lazy val demoer = system.actorOf(Demoer.props, "demoer")
 
   /** The Akka system provided by the Play application. */
   def system = Akka.system(app)
