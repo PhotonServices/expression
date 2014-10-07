@@ -75,7 +75,7 @@ class SentimentAPIRequester (receptor: ActorRef) extends Actor {
   def enTOes (sentiment: String): String = sentiment match {
     case "excellent" => "muy_positivos"
     case "good" => "positivos"
-    case "neutral" => "neutral"
+    case "neutral" => "neutros"
     case "bad" => "negativos"
     case "terrible" => "muy_negativos"
   }
@@ -87,6 +87,6 @@ class SentimentAPIRequester (receptor: ActorRef) extends Actor {
       val mapa = (data.flatMap(x=>x).toMap)
       val folk = mapa(enTOes(sentiment)).map({ case (word, hits) => word }).toList 
       receptor ! CommentData(sentiment, folk)
-    }
+    } recover { case e: Exception => throw e }
   }
 }

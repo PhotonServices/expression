@@ -350,9 +350,14 @@ with BeforeAndAfterAll {
    */
   "A SentimentAPIRequester actor" should {
 
-    "request to the sentiment service (needs an active sentiment service)" ignore {
+    "request to the sentiment service (1) (needs an active sentiment service)" in {
       sentimentApi ! Comment("El servicio es excelente.")
       expectMsg(CommentData("excellent", List("servicio")))
+    }
+
+    "request to the sentiment service (2) (needs an active sentiment service)" in {
+      sentimentApi ! Comment("El iPhone.")
+      expectMsg(CommentData("neutral", List("iPhone")))
     }
   }
 
@@ -370,9 +375,19 @@ with BeforeAndAfterAll {
       Actors.demoer ! Commands(Array(
         "1 new >>> Test Card"))
       val CardNew(id, rname) = receiveOne(1200 milliseconds)
-      assert(id == name.replace(' ', '-'))
+      assert(id == "Test-Card")
       assert(rname == name)
       unsubscribe("card-new")
+    }
+
+    "Schedule new comments (needs an active sentiment service)" in {
+      subscribe("Test-Card:folksonomy-excellent:add")
+      Actors.demoer ! Commands(Array(
+        "1 cmt:Test-Card >>> El servicio es excelente.",
+        "2 cmt:Test-Card >>> La mesera es excelente."))
+      expectMsg(1200 milliseconds, FolksonomyUpdate("Test-Card", "excellent", "add", "servicio"))
+      expectMsg(1200 milliseconds, FolksonomyUpdate("Test-Card", "excellent", "add", "mesera"))
+      unsubscribe("testid:folksonomy-excellent:add")
     }
   }
 }
