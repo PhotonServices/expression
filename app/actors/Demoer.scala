@@ -61,9 +61,9 @@ class Demoer extends Actor {
 
   val cards = Map[String, ActorRef]()
 
-  val NewReg = """([1-9]+) new >>> (.*)""".r
+  val NewReg = """([0-9]+) new >>> (.*)""".r
 
-  val CmtReg = """([1-9]+) cmt:(.*) >>> (.*)""".r
+  val CmtReg = """([0-9]+) cmt:(.*) >>> (.*)""".r
 
   def receive = {
     case Commands(cmds) => cmds foreach { cmd => cmd match {
