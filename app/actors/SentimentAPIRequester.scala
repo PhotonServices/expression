@@ -86,7 +86,8 @@ class SentimentAPIRequester (receptor: ActorRef) extends Actor {
       val data = (response.json \ "folksonomies").as[Array[Map[String, Map[String, Int]]]]
       val mapa = (data.flatMap(x=>x).toMap)
       val folk = mapa(enTOes(sentiment)).map({ case (word, hits) => word }).toList 
-      receptor ! CommentData(sentiment, folk)
+      if (sentiment != "neutral")
+        receptor ! CommentData(sentiment, folk)
     } recover { case e: Exception => throw e }
   }
 }
