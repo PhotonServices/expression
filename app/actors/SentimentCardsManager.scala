@@ -53,12 +53,14 @@ class SentimentCardsManager extends Actor with ActorLogging {
 
   val cards = Map[String, ActorRef]()
 
+  val TwitterCardName = """twitter:(.*)""".r
+
   override def preStart() = Actors.mediator ! Subscribe("client-subscription:card-new", self)
 
   def genId: String = java.util.UUID.randomUUID.toString
 
-  def createSentimentCard (id: String, name: String) =
-    cards += (id -> context.actorOf(SentimentCard.props(id, name), id))
+  def createSentimentCard (id: String, name: String): ActorRef =
+    (cards += (id -> context.actorOf(SentimentCard.props(id, name), id)))(id)
 
   def deleteSentimentCard (id: String) = context.child(id) match {
     case Some(child) => 
@@ -68,6 +70,10 @@ class SentimentCardsManager extends Actor with ActorLogging {
   }
 
   def receive = {
+    case CardNew(_, TwitterCardName(name)) => 
+      println(s"Will create tweet streamer $name")
+      context.actorOf(TweetStreamer.props(createSentimentCard(genId, name))) ! name
+
     case CardNew(_, name) => 
       createSentimentCard(genId, name)
 
