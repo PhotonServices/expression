@@ -9,6 +9,7 @@ import scala.concurrent.Future
 import play.api.libs.json._
 import play.api.libs.ws._
 import play.api.libs.concurrent.Execution.Implicits._
+import play.api.Play.current
 
 /** An external web service which can be called through http requests. */
 trait WebService {
@@ -32,13 +33,13 @@ trait WebService {
     *
     * @param path to post to.
     * @param data to be posted.
-    * @param callback (Boolean, Response)=>Unit callback with
+    * @param callback (Boolean, WSResponse)=>Unit callback with
     *                 first parameter 'true' if there was an error.
     */
-  def post (path: String, data: JsValue, callback: (Boolean, Response)=>Unit): Unit = {
+  def post (path: String, data: JsValue, callback: (Boolean, WSResponse)=>Unit): Unit = {
     var requestHolder = WS.url(s"http://$host:$port$path").withHeaders("Content-Type" -> "application/json")
     if (user != null && password != null) {
-      requestHolder = requestHolder.withAuth(user, password, com.ning.http.client.Realm.AuthScheme.BASIC)
+      requestHolder = requestHolder.withAuth(user, password, WSAuthScheme.BASIC)
     }
     requestHolder.post(data) map { response =>
       if (response.status == 200)
@@ -56,13 +57,11 @@ trait WebService {
     *                 'true' if ping was successful.
     */
   def ping (callback: Boolean=>Unit): Unit = {
-    Log.debug(s"Will ping to $host:$port")
-    var requestHolder = WS.url(s"http://$host:$port").withTimeout(2000)
+    var requestHolder = WS.url(s"http://$host:$port").withRequestTimeout(2000)
     if (user != null && password != null) {
-      requestHolder = requestHolder.withAuth(user, password, com.ning.http.client.Realm.AuthScheme.BASIC)
+      requestHolder = requestHolder.withAuth(user, password, WSAuthScheme.BASIC)
     }
     requestHolder.head() map { response =>
-      Log.debug(s"Ping to $host:$port with response ${response.status}.")
       if (response.status == 200)
         callback(true)
       else
