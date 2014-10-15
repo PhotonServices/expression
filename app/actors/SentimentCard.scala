@@ -6,7 +6,7 @@ package actors
 
 import akka.actor._
 
-/** Companion object with all the messages that involves 
+/** Companion object with all the messages that involves
  *  interaction with [[actors.SentimentCard]] actors.
  */
 object SentimentCard {
@@ -17,16 +17,16 @@ object SentimentCard {
   /** Message to move a processed comment data between actors. */
   case class CommentData (sentiment: String, folksonomies: List[String])
 
-  def props (id: String, name: String): Props = 
+  def props (id: String, name: String): Props =
     Props(new SentimentCard(id: String, name: String))
 }
 
 /** Supervised by [[actors.SentimentCardsManager]], this actor manages
  *  the processing of comments over a sentiment card. It uses
- *  static children to further process comment data and obtain 
+ *  static children to further process comment data and obtain
  *  semantic characteristics for the sentiment card.
  *
- *  The current children are: [[actors.SentimentStats]], [[actors.Folksonomy]].
+ *  The current children are: [[actors.Stats]], [[actors.Folksonomy]].
  *
  *  The complete work flow:
  *
@@ -53,7 +53,7 @@ object SentimentCard {
  *  This actor also receives redirections of [[actors.WebSocketRouter.ClientSubscription]]
  *  messages, which notify that a client through a web socket subscribed
  *  to the 'new-card' event, when notified this card pushes his information
- *  through a [[actors.SentimentCardsManager.CardNew]] message to the 
+ *  through a [[actors.SentimentCardsManager.CardNew]] message to the
  *  subscribed socket.
  */
 class SentimentCard (id: String, name: String) extends Actor {
@@ -74,14 +74,14 @@ class SentimentCard (id: String, name: String) extends Actor {
     Comment,
     CommentData}
 
-  import SentimentStats.{
+  import Stats.{
     Sentiment}
 
   import Folksonomy.{
     FolksonomyWord}
 
-  /** [[SentimentStats]] actor for this card. */
-  val stats: ActorRef  = context.actorOf(SentimentStats.props(id), s"$id:stats")
+  /** [[Stats]] actor for this card. */
+  val stats: ActorRef  = context.actorOf(Stats.props(id), s"$id:stats")
 
   /** [[Folksonomy]] actor for this card. */
   val folksonomy: ActorRef = context.actorOf(Folksonomy.props(id), s"$id:folksonomy")
@@ -105,7 +105,7 @@ class SentimentCard (id: String, name: String) extends Actor {
     folklist foreach { word => folksonomy ! FolksonomyWord(sentiment, word) }
 
   def receive = {
-    case msg: Comment => 
+    case msg: Comment =>
       processComment(msg)
 
     case CommentData(sentiment, folklist) =>

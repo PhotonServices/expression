@@ -34,7 +34,7 @@ import actors.{
   WebSocketRouter,
   SentimentCardsManager,
   SentimentCard,
-  SentimentStats,
+  Stats,
   Folksonomy,
   SentimentAPIRequester,
   Demoer}
@@ -53,7 +53,7 @@ import SentimentCard.{
   Comment,
   CommentData}
 
-import SentimentStats.{
+import Stats.{
   Sentiment,
   SentimentUpdate,
   AmountUpdate,
@@ -105,7 +105,7 @@ with BeforeAndAfterAll {
   override def beforeAll {
     router = system.actorOf(WebSocketRouter.props(self))
     manager = Actors.sentimentCardsManager
-    stats = system.actorOf(SentimentStats.props("testid"))
+    stats = system.actorOf(Stats.props("testid"))
     folksonomy = system.actorOf(Folksonomy.props("testid"))
     sentimentApi = system.actorOf(SentimentAPIRequester.props(self))
   }
@@ -224,11 +224,11 @@ with BeforeAndAfterAll {
 
   /**
    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-   * S4: SentimentStats
+   * S4: Stats
    *
    *
    */
-  "A SentimentStats actor" should {
+  "A Stats actor" should {
 
     "calculate and publish final sentiment" in {
       subscribe("testid:sentiment-final")

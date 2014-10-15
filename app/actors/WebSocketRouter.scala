@@ -31,7 +31,7 @@ object WebSocketRouter {
     implicit val messageFrameFormater = FrameFormatter.jsonFrame[ClientIn]
   }
 
-  /** [[ClientOut]] companion which holds the formaters needed to convert to json. 
+  /** [[ClientOut]] companion which holds the formaters needed to convert to json.
    *
    * This message is used to publish events by other actors to be sent to the client.
    */
@@ -40,16 +40,16 @@ object WebSocketRouter {
     implicit val messageFrameFormater = FrameFormatter.jsonFrame[ClientOut]
   }
 
-  /** Constructor for [[WebSocketRouter]] actor props. 
+  /** Constructor for [[WebSocketRouter]] actor props.
    *
-   * @param out actor which handles messages to the client. 
-   * @return Props of WebSocketRouter. 
+   * @param out actor which handles messages to the client.
+   * @return Props of WebSocketRouter.
    */
   def props(out: ActorRef) = Props(new WebSocketRouter(out))
 }
 
 /** Actor which enroutes messages and events from and to the client.
- * 
+ *
  *  The actor enroutes messages from web socket clients and delivers
  *  events to which the client is subscribed. It also manages the
  *  subscriptions to specific events which the client can subscribe to,
@@ -61,7 +61,7 @@ object WebSocketRouter {
  *  this way other actors can be informed about clients subscribing to events,
  *  so that the actors can push their most recent state.
  *
- * @see [[https://www.playframework.com/documentation/2.3.x/ScalaWebSockets Play Framework WebSockets documentation]] to further understand the functionality of this actor.   
+ * @see [[https://www.playframework.com/documentation/2.3.x/ScalaWebSockets Play Framework WebSockets documentation]] to further understand the functionality of this actor.
  */
 class WebSocketRouter (out: ActorRef) extends Actor {
 
@@ -76,7 +76,7 @@ class WebSocketRouter (out: ActorRef) extends Actor {
     Publish}
 
   import WebSocketRouter.{
-    ClientIn, 
+    ClientIn,
     ClientOut,
     TestEvent,
     ClientSubscription}
@@ -88,7 +88,7 @@ class WebSocketRouter (out: ActorRef) extends Actor {
   import SentimentCard.{
     Comment}
 
-  import SentimentStats.{
+  import Stats.{
     SentimentUpdate,
     AmountUpdate,
     BarsUpdate}
@@ -125,7 +125,7 @@ class WebSocketRouter (out: ActorRef) extends Actor {
 
   /** Messages to start an echo. */
   def messageToEchoer (message: String, content: String) = message match {
-    case "interval" => 
+    case "interval" =>
       if (echoCanceller == null) scheduleEcho(content) match {
         case Some(canceller) => echoCanceller = canceller
         case None => error("Not an integer")
@@ -139,7 +139,7 @@ class WebSocketRouter (out: ActorRef) extends Actor {
 
   /** Messages to the events mediator. */
   def messageToMediator (message: String, content: String) = message match {
-    case "subscribe" => 
+    case "subscribe" =>
       Actors.mediator ! Publish(s"client-subscription:$content", ClientSubscription(content, self))
       Actors.mediator ! Subscribe(content, self)
     case "unsubscribe" => Actors.mediator ! Unsubscribe(content, self)
@@ -162,46 +162,46 @@ class WebSocketRouter (out: ActorRef) extends Actor {
   def receive = {
     /** Messages from the client to the actors system. */
     case ClientIn(path, message, content) => path match {
-      case "echo" => 
-        messageToEchoer(message, content) 
+      case "echo" =>
+        messageToEchoer(message, content)
 
-      case "events" => 
+      case "events" =>
         messageToMediator(message, content)
 
-      case "cards-manager" => 
+      case "cards-manager" =>
         messageToManager(message, content)
 
-      case ChildCardPattern(manager, card) => 
+      case ChildCardPattern(manager, card) =>
         messageToCards(context.actorSelection(s"/user/$manager/$card"), message, content)
 
-      case _ => 
+      case _ =>
         error(s"No such path '$path'.")
     }
 
     /** Events from the actors system to the client. */
-    case SubscribeAck(Subscribe(event, _, _)) => 
-      emit("subscribe", Json.toJson(event)) 
+    case SubscribeAck(Subscribe(event, _, _)) =>
+      emit("subscribe", Json.toJson(event))
 
-    case UnsubscribeAck(Unsubscribe(event, _, _)) => 
+    case UnsubscribeAck(Unsubscribe(event, _, _)) =>
       emit("unsubscribe", Json.toJson(event))
 
-    case TestEvent(data) => 
+    case TestEvent(data) =>
       emit("test", Json.toJson(data))
 
-    case CardNew(id, name) => 
+    case CardNew(id, name) =>
       emit("card-new", Json.obj("id" -> id, "name" -> name))
 
-    case CardDelete(name) => 
+    case CardDelete(name) =>
       emit("card-delete", Json.toJson(name))
 
-    case AmountUpdate(card, sentiment, amount) => 
+    case AmountUpdate(card, sentiment, amount) =>
       emit(s"$card:count-$sentiment", Json.toJson(amount))
 
-    case SentimentUpdate(card, value) => 
-      emit(s"$card:sentiment-final", Json.toJson(value)) 
+    case SentimentUpdate(card, value) =>
+      emit(s"$card:sentiment-final", Json.toJson(value))
 
-    case BarsUpdate(card, bars) => 
-      emit(s"$card:sentiment-bars", Json.toJson(bars)) 
+    case BarsUpdate(card, bars) =>
+      emit(s"$card:sentiment-bars", Json.toJson(bars))
 
     case FolksonomyUpdate(card, sentiment, action, word) =>
       emit(s"$card:folksonomy-$sentiment:$action", Json.toJson(word))
