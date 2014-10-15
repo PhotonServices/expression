@@ -6,10 +6,10 @@ package actors
 
 import akka.actor._
 
-/** Companion object with all the messages that involves 
+/** Companion object with all the messages that involves
  *  interaction with this actor.
  */
-object SentimentCardsManager {
+object CardsManager {
 
   /** Message to create a new sentiment card. */
   case class CardNew (id: String, name: String)
@@ -17,11 +17,11 @@ object SentimentCardsManager {
   /** Message to delete an existing sentiment card. */
   case class CardDelete (id: String)
 
-  /** Constructor for [[SentimentCardsManager]] actor props. 
+  /** Constructor for [[CardsManager]] actor props.
    *
-   * @return Props of SentimentCardsManager. 
+   * @return Props of CardsManager.
    */
-  def props: Props = Props(new SentimentCardsManager)
+  def props: Props = Props(new CardsManager)
 }
 
 /** Singleton actor which handles the creation and deletion
@@ -30,10 +30,10 @@ object SentimentCardsManager {
  *
  *  Also it subscribes to the 'client-subscription:card-new' event,
  *  which will notify him of every client which subscribes to the
- *  'card-new' event, for every notification the SentimentCardsManager
+ *  'card-new' event, for every notification the CardsManager
  *  redirects the message to every SentimentCard actor.
  */
-class SentimentCardsManager extends Actor with ActorLogging {
+class CardsManager extends Actor with ActorLogging {
 
   import collection.mutable.Map
 
@@ -44,7 +44,7 @@ class SentimentCardsManager extends Actor with ActorLogging {
   import akka.actor.{
     PoisonPill}
 
-  import SentimentCardsManager.{
+  import CardsManager.{
     CardNew,
     CardDelete}
 
@@ -61,17 +61,17 @@ class SentimentCardsManager extends Actor with ActorLogging {
     cards += (id -> context.actorOf(SentimentCard.props(id, name), id))
 
   def deleteSentimentCard (id: String) = context.child(id) match {
-    case Some(child) => 
+    case Some(child) =>
       child ! PoisonPill
       cards -= id
     case None => log.info("Tried to kill {} card but was already dead.", id)
   }
 
   def receive = {
-    case CardNew(_, name) => 
+    case CardNew(_, name) =>
       createSentimentCard(genId, name)
 
-    case CardDelete(id) => 
+    case CardDelete(id) =>
       deleteSentimentCard(id)
 
     case ClientSubscription(event, socket) =>

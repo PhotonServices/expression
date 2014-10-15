@@ -81,7 +81,7 @@ class WebSocketRouter (out: ActorRef) extends Actor {
     TestEvent,
     ClientSubscription}
 
-  import SentimentCardsManager.{
+  import CardsManager.{
     CardNew,
     CardDelete}
 

@@ -21,7 +21,7 @@ object SentimentCard {
     Props(new SentimentCard(id: String, name: String))
 }
 
-/** Supervised by [[actors.SentimentCardsManager]], this actor manages
+/** Supervised by [[actors.CardsManager]], this actor manages
  *  the processing of comments over a sentiment card. It uses
  *  static children to further process comment data and obtain
  *  semantic characteristics for the sentiment card.
@@ -53,7 +53,7 @@ object SentimentCard {
  *  This actor also receives redirections of [[actors.WebSocketRouter.ClientSubscription]]
  *  messages, which notify that a client through a web socket subscribed
  *  to the 'new-card' event, when notified this card pushes his information
- *  through a [[actors.SentimentCardsManager.CardNew]] message to the
+ *  through a [[actors.CardsManager.CardNew]] message to the
  *  subscribed socket.
  */
 class SentimentCard (id: String, name: String) extends Actor {
@@ -66,7 +66,7 @@ class SentimentCard (id: String, name: String) extends Actor {
   import WebSocketRouter.{
     ClientSubscription}
 
-  import SentimentCardsManager.{
+  import CardsManager.{
     CardNew,
     CardDelete}
 

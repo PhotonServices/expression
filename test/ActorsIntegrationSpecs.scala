@@ -32,7 +32,7 @@ import org.scalatest.{
 import actors.{
   Actors,
   WebSocketRouter,
-  SentimentCardsManager,
+  CardsManager,
   SentimentCard,
   Stats,
   Folksonomy,
@@ -45,7 +45,7 @@ import WebSocketRouter.{
   TestEvent,
   ClientSubscription}
 
-import SentimentCardsManager.{
+import CardsManager.{
   CardNew,
   CardDelete}
 
@@ -159,11 +159,11 @@ with BeforeAndAfterAll {
 
   /**
    * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-   * S2: SentimentCardsManager
+   * S2: CardsManager
    *
    *
    */
-  "The SentimentCardsManager" should {
+  "The CardsManager" should {
 
     "create a new SentimentCard" in {
       subscribe("card-new")
