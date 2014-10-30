@@ -2,45 +2,17 @@
  * @author Francisco Miguel Arámburo Torres - atfm05@gmail.com
  */
 
-package actors
+package scards
 
+import collection.mutable.Map
+
+import messages._
 import akka.actor._
-
-/** Companion object with all the messages that involves
- *  interaction with this actor.
- */
-object Stats {
-
-  case class Sentiment (sentiment: String)
-
-  case class AmountUpdate (card: String, sentiment: String, amounts: Int)
-
-  case class SentimentUpdate (card: String, value: Float)
-
-  case class BarsUpdate (card: String, sentimentBars: Map[String, Float])
-
-  def props (card: String): Props = Props(new Stats(card))
-}
 
 /** Mantains the general statistics of the sentiment of
  *  a sentiment card.
  */
 class Stats (card: String) extends Actor {
-
-  import collection.mutable.Map
-
-  import akka.contrib.pattern.DistributedPubSubMediator.{
-    Subscribe,
-    Publish}
-
-  import WebSocketRouter.{
-    ClientSubscription}
-
-  import Stats.{
-    Sentiment,
-    SentimentUpdate,
-    AmountUpdate,
-    BarsUpdate}
 
   var sentimentFinal = 0f
 

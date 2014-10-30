@@ -2,24 +2,10 @@
  * @author Francisco Miguel Arámburo Torres - atfm05@gmail.com
  */
 
-package actors
+package scards 
 
+import messages._
 import akka.actor._
-
-/** Companion object with all the messages that involves
- *  interaction with [[actors.SentimentCard]] actors.
- */
-object SentimentCard {
-
-  /** Message to move a comment between actors. */
-  case class Comment (comment: String)
-
-  /** Message to move a processed comment data between actors. */
-  case class CommentData (sentiment: String, folksonomies: List[String])
-
-  def props (id: String, name: String): Props =
-    Props(new SentimentCard(id: String, name: String))
-}
 
 /** Supervised by [[actors.CardsManager]], this actor manages
  *  the processing of comments over a sentiment card. It uses
@@ -57,28 +43,6 @@ object SentimentCard {
  *  subscribed socket.
  */
 class SentimentCard (id: String, name: String) extends Actor {
-
-  import akka.contrib.pattern.DistributedPubSubMediator.Publish
-
-  import akka.actor.{
-    PoisonPill}
-
-  import WebSocketRouter.{
-    ClientSubscription}
-
-  import CardsManager.{
-    CardNew,
-    CardDelete}
-
-  import SentimentCard.{
-    Comment,
-    CommentData}
-
-  import Stats.{
-    Sentiment}
-
-  import Folksonomy.{
-    FolksonomyWord}
 
   /** [[Stats]] actor for this card. */
   val stats: ActorRef  = context.actorOf(Stats.props(id), s"$id:stats")

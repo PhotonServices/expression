@@ -2,27 +2,12 @@
  * @author Francisco Miguel Arámburo Torres - atfm05@gmail.com
  */
 
-package actors
+package scards
 
+import collection.mutable.Map
+import messages._
 import akka.actor._
-
-/** Companion object with all the messages that involves
- *  interaction with this actor.
- */
-object CardManager {
-
-  /** Message to create a new sentiment card. */
-  case class CardNew (id: String, name: String)
-
-  /** Message to delete an existing sentiment card. */
-  case class CardDelete (id: String)
-
-  /** Constructor for [[CardManager]] actor props.
-   *
-   * @return Props of CardManager.
-   */
-  def props: Props = Props(new CardManager)
-}
+//import akka.actor.PoisonPill
 
 /** Singleton actor which handles the creation and deletion
  *  of sentiment cards, which are abstracted by a [[actors.SentimentCard]]
@@ -34,22 +19,6 @@ object CardManager {
  *  redirects the message to every SentimentCard actor.
  */
 class CardManager extends Actor with ActorLogging {
-
-  import collection.mutable.Map
-
-  import akka.contrib.pattern.DistributedPubSubMediator.{
-    Publish,
-    Subscribe}
-
-  import akka.actor.{
-    PoisonPill}
-
-  import CardManager.{
-    CardNew,
-    CardDelete}
-
-  import WebSocketRouter.{
-    ClientSubscription}
 
   val cards = Map[String, ActorRef]()
 

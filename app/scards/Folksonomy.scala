@@ -2,51 +2,20 @@
  * @author Francisco Miguel Arámburo Torres - atfm05@gmail.com
  */
 
-package actors
+package scards
 
+import collection.mutable.Set
+import scalaz.Scalaz._
+
+import messages._
 import akka.actor._
-
-/** Messages for the [[actors.Folksonomy]] actor. 
- *  Also with a simpler Props builder
- */
-object Folksonomy {
-
-  /** Message to add a word to this folksonomy. */
-  case class FolksonomyWord (sentiment: String, word: String)
-
-  /** Message to inform the client about a change in the folksonomy. */
-  case class FolksonomyUpdate (card: String, sentiment: String, action: String, word: String)
-
-  def props (card: String): Props = Props(new Folksonomy(card))
-}
 
 /** Mantains a rank of top words which are talked about
  *  in the comments of a sentiment card.
  */
 class Folksonomy (card: String) extends Actor {
 
-  import scalaz.Scalaz._
-  import collection.mutable.Set
-  import play.api.Play.current
-
-  import akka.contrib.pattern.DistributedPubSubMediator.{
-    Subscribe,
-    Publish}
-
-  import WebSocketRouter.{
-    ClientSubscription}
-
-  import Folksonomy.{
-    FolksonomyUpdate,
-    FolksonomyWord}
-
-  /** The threshold of the top words, can be configured in
-   * /conf/application.conf with the attribute 'sentiment.folksonomy.threshold'
-   */
-  val threshold = current.configuration.getInt("sentiment.folksonomy.threshold") match {
-    case Some(value) => value
-    case None => throw new Exception("Expected 'sentiment.folksonomy.threshold' configuration option in the play framework configuration file.")
-  }
+  val threshold = 5
 
   type Sentiment = String
   type Word = String
