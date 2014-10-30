@@ -5,9 +5,8 @@
 package scards
 
 import collection.mutable.Map
-import messages._
+
 import akka.actor._
-//import akka.actor.PoisonPill
 
 /** Singleton actor which handles the creation and deletion
  *  of sentiment cards, which are abstracted by a [[actors.SentimentCard]]
@@ -18,16 +17,16 @@ import akka.actor._
  *  'card-new' event, for every notification the CardManager
  *  redirects the message to every SentimentCard actor.
  */
-class CardManager extends Actor with ActorLogging {
+class CardManager (eventbus: ActorRef) extends Actor with ActorLogging {
 
   val cards = Map[String, ActorRef]()
 
-  override def preStart() = Actors.mediator ! Subscribe("client-subscription:card-new", self)
+  override def preStart() = eventbus ! Subscribe("client-subscription:card-new", self)
 
-  def genId: String = java.util.UUID.randomUUID.toString
+  def genId: String = java.util.UUID.randomUUID.toString filterNot(_ == '-')
 
   def createSentimentCard (id: String, name: String) =
-    cards += (id -> context.actorOf(SentimentCard.props(id, name), id))
+    cards += (id -> context.actorOf(Props(classOf[SentimentCard], id, name, eventbus), id))
 
   def deleteSentimentCard (id: String) = context.child(id) match {
     case Some(child) =>

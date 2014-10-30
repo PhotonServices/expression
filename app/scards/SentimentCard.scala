@@ -4,7 +4,6 @@
 
 package scards 
 
-import messages._
 import akka.actor._
 
 /** Supervised by [[actors.CardsManager]], this actor manages
@@ -42,25 +41,22 @@ import akka.actor._
  *  through a [[actors.CardsManager.CardNew]] message to the
  *  subscribed socket.
  */
-class SentimentCard (id: String, name: String) extends Actor {
+class SentimentCard (id: String, name: String, eventbus: ActorRef) extends Actor {
 
   /** [[Stats]] actor for this card. */
-  val stats: ActorRef  = context.actorOf(Stats.props(id), s"$id:stats")
+  val stats: ActorRef  = context.actorOf(Props(classOf[Stats], id, eventbus), s"$id:stats")
 
   /** [[Folksonomy]] actor for this card. */
-  val folksonomy: ActorRef = context.actorOf(Folksonomy.props(id), s"$id:folksonomy")
+  val folksonomy: ActorRef = context.actorOf(Props(classOf[Folksonomy], id, eventbus), s"$id:folksonomy")
 
   /** On creation publish it to the clients. */
-  override def preStart () = Actors.mediator ! Publish("card-new", CardNew(id, name))
+  override def preStart () = eventbus ! Publish("card-new", CardNew(id, name))
 
   /** On deletion publish it to the clients. */
-  override def postStop () = Actors.mediator ! Publish("card-delete", CardDelete(id))
-
-  def genId: String = java.util.UUID.randomUUID.toString
+  override def postStop () = eventbus ! Publish("card-delete", CardDelete(id))
 
   /** Creates a new [[SentimentAPIRequester]] actor to delegate the processing of a comment. */
-  def processComment (comment: Comment) =
-      context.actorOf(SentimentAPIRequester.props(self), genId).forward(comment)
+  def processComment (comment: Comment) = println("!!! process text not yet implemented !!!")
 
   def processSentiment (sentiment: String) =
     stats ! Sentiment(sentiment)

@@ -6,13 +6,12 @@ package scards
 
 import collection.mutable.Map
 
-import messages._
 import akka.actor._
 
 /** Mantains the general statistics of the sentiment of
  *  a sentiment card.
  */
-class Stats (card: String) extends Actor {
+class Stats (card: String, eventbus: ActorRef) extends Actor {
 
   var sentimentFinal = 0f
 
@@ -32,16 +31,16 @@ class Stats (card: String) extends Actor {
     "terrible" -> 0)
 
   override def preStart() = {
-    Actors.mediator ! Subscribe(s"client-subscription:$card:sentiment-final", self)
-    Actors.mediator ! Subscribe(s"client-subscription:$card:sentiment-bars", self)
+    eventbus ! Subscribe(s"client-subscription:$card:sentiment-final", self)
+    eventbus ! Subscribe(s"client-subscription:$card:sentiment-bars", self)
     amounts.foreach { case (sentiment, amount) =>
-      Actors.mediator ! Subscribe(s"client-subscription:$card:count-$sentiment", self)
+      eventbus ! Subscribe(s"client-subscription:$card:count-$sentiment", self)
     }
   }
 
   def recalculateSentimentAmount (sentiment: String) = {
     amounts(sentiment) = amounts(sentiment) + 1
-    Actors.mediator ! Publish(s"$card:count-$sentiment", AmountUpdate(card, sentiment, amounts(sentiment)))
+    eventbus ! Publish(s"$card:count-$sentiment", AmountUpdate(card, sentiment, amounts(sentiment)))
   }
 
   def recalculateFinalSentiment = {
@@ -57,14 +56,14 @@ class Stats (card: String) extends Actor {
       }
     } / amounts("total")
     if (lastSentiment != sentimentFinal)
-      Actors.mediator ! Publish(s"$card:sentiment-final", SentimentUpdate(card, sentimentFinal))
+      eventbus ! Publish(s"$card:sentiment-final", SentimentUpdate(card, sentimentFinal))
   }
 
   def recalculateSentimentBars = {
     amounts - "total" map {
       case (sentiment, num) => sentimentBars(sentiment) = num * 100f / amounts("total")
     }
-    Actors.mediator ! Publish(s"$card:sentiment-bars", BarsUpdate(card, sentimentBars.toMap))
+    eventbus ! Publish(s"$card:sentiment-bars", BarsUpdate(card, sentimentBars.toMap))
   }
 
   val FinalBarsRegExp = """.*:sentiment-(final|bars)""".r

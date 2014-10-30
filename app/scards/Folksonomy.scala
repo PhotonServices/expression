@@ -7,13 +7,12 @@ package scards
 import collection.mutable.Set
 import scalaz.Scalaz._
 
-import messages._
 import akka.actor._
 
 /** Mantains a rank of top words which are talked about
  *  in the comments of a sentiment card.
  */
-class Folksonomy (card: String) extends Actor {
+class Folksonomy (card: String, eventbus:ActorRef) extends Actor {
 
   val threshold = 5
 
@@ -45,7 +44,7 @@ class Folksonomy (card: String) extends Actor {
   /** This actor subscribes to be notified of any client that subscribes to his events. */
   override def preStart() =
     top.foreach { case (sentiment, set) =>
-      Actors.mediator ! Subscribe(s"client-subscription:$card:folksonomy-$sentiment:add", self)
+      eventbus ! Subscribe(s"client-subscription:$card:folksonomy-$sentiment:add", self)
     }
 
   def addWord (word: Word, sentiment: Sentiment) =
@@ -115,9 +114,9 @@ class Folksonomy (card: String) extends Actor {
     sendUpdate("remove", word, "global")
   }
 
-  /** Builds a [[actors.Folksonomy.FolksonomyUpdate]] message and publishs it. */
+  /** Builds a [[actors.Folksonomy.FolksonomyUpdate]] message and publishs it. */
   def sendUpdate(action: String, word: Word, sentiment: Sentiment) =
-    Actors.mediator ! Publish(s"$card:folksonomy-$sentiment:$action", FolksonomyUpdate(card, sentiment, action, word))
+    eventbus ! Publish(s"$card:folksonomy-$sentiment:$action", FolksonomyUpdate(card, sentiment, action, word))
 
   /** Extracts a sentiment from a folksonomy event string. */
   val SentimentRegExp = """.*folksonomy-(excellent|good|neutral|bad|terrible|global):add""".r
