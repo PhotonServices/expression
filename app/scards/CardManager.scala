@@ -9,7 +9,7 @@ import akka.actor._
 /** Companion object with all the messages that involves
  *  interaction with this actor.
  */
-object CardsManager {
+object CardManager {
 
   /** Message to create a new sentiment card. */
   case class CardNew (id: String, name: String)
@@ -17,11 +17,11 @@ object CardsManager {
   /** Message to delete an existing sentiment card. */
   case class CardDelete (id: String)
 
-  /** Constructor for [[CardsManager]] actor props.
+  /** Constructor for [[CardManager]] actor props.
    *
-   * @return Props of CardsManager.
+   * @return Props of CardManager.
    */
-  def props: Props = Props(new CardsManager)
+  def props: Props = Props(new CardManager)
 }
 
 /** Singleton actor which handles the creation and deletion
@@ -30,10 +30,10 @@ object CardsManager {
  *
  *  Also it subscribes to the 'client-subscription:card-new' event,
  *  which will notify him of every client which subscribes to the
- *  'card-new' event, for every notification the CardsManager
+ *  'card-new' event, for every notification the CardManager
  *  redirects the message to every SentimentCard actor.
  */
-class CardsManager extends Actor with ActorLogging {
+class CardManager extends Actor with ActorLogging {
 
   import collection.mutable.Map
 
@@ -44,7 +44,7 @@ class CardsManager extends Actor with ActorLogging {
   import akka.actor.{
     PoisonPill}
 
-  import CardsManager.{
+  import CardManager.{
     CardNew,
     CardDelete}
 
