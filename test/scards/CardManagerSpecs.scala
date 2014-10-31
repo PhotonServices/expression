@@ -8,13 +8,11 @@ import org.scalatest.WordSpecLike
 import org.scalatest.Matchers
 import org.scalatest.BeforeAndAfterAll
 
-class CardManagerSpec (_system: ActorSystem) extends TestKit(_system) 
+class CardManagerSpec extends TestKit(ActorSystem("scards-test"))
 with ImplicitSender
 with WordSpecLike 
 with Matchers 
 with BeforeAndAfterAll {
-
-  def this() = this(ActorSystem("scardssys"))
 
   override def afterAll {
     TestKit.shutdownActorSystem(system)
@@ -42,14 +40,16 @@ with BeforeAndAfterAll {
 
     "deliver created cards on 'card-new' subscription" in {
       manager ! ClientSubscription("card-new", self)
-      expectMsg(CardNew(testid, "Testing"))
+      fishForMessage(200 milliseconds) {
+        case CardNew(id, "Testing") => true
+        case _ => false
+      }
     }
 
     "delete a sentiment card" in {
       manager ! CardDelete(testid)
       fishForMessage(200 milliseconds) {
-        case Publish("card-delete", CardDelete(testid), _) =>
-          true
+        case Publish("card-delete", CardDelete(testid), _) => true
         case _ => false
       }
     }
