@@ -3,5 +3,5 @@
 # ~~~~
 
 # Home page
-GET  /       controllers.Application.index
-#GET  /ws     controllers.Application.socket
+#GET  /        controllers.Application.socket
+GET  /health  controllers.Application.health
