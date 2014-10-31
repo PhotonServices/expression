@@ -3,12 +3,10 @@
  */
 
 import play.api._
-import actors.Actors
 
 object Global extends GlobalSettings {
 
   override def onStart(app: Application) {
-    Actors(app)
   }
 
 }

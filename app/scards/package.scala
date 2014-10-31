@@ -2,22 +2,23 @@
  * @author Francisco Miguel Arámburo Torres - atfm05@gmail.com
  */
 
-import akka.actors.ActorSystem
+import akka.actor.{ActorSystem, ActorRef}
 import akka.contrib.pattern.DistributedPubSubExtension
+import akka.contrib.pattern.DistributedPubSubMediator
 
 package object scards {
 
   def eventbus (s: ActorSystem): ActorRef = DistributedPubSubExtension(s).mediator
 
-  type Subscribe = akka.contrib.pattern.DistributedPubSubMediator.Subscribe
+  val Publish = DistributedPubSubMediator.Publish
 
-  type SubscribeAck = akka.contrib.pattern.DistributedPubSubMediator.SubscribeAck
+  val Subscribe = DistributedPubSubMediator.Subscribe
 
-  type Unsubscribe = akka.contrib.pattern.DistributedPubSubMediator.Unsubscribe
+  val SubscribeAck = DistributedPubSubMediator.SubscribeAck
 
-  type UnsubscribeAck = akka.contrib.pattern.DistributedPubSubMediator.UnsubscribeAck
+  val Unsubscribe = DistributedPubSubMediator.Unsubscribe
 
-  type Publish = akka.contrib.pattern.DistributedPubSubMediator.Publish
+  val UnsubscribeAck = DistributedPubSubMediator.UnsubscribeAck
 
   case class CardNew (id: String, name: String)
 
@@ -39,4 +40,5 @@ package object scards {
 
   case class BarsUpdate (card: String, sentimentBars: Map[String, Float])
 
+  case class ClientSubscription (event: String, socket: ActorRef)
 }
