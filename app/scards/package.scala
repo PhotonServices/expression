@@ -8,37 +8,37 @@ import akka.contrib.pattern.DistributedPubSubMediator
 
 package object scards {
 
-  def eventbus (s: ActorSystem): ActorRef = DistributedPubSubExtension(s).mediator
+  protected[scards] def eventbus (s: ActorSystem): ActorRef = DistributedPubSubExtension(s).mediator
 
-  val Publish = DistributedPubSubMediator.Publish
+  protected[scards] val Publish = DistributedPubSubMediator.Publish
 
-  val Subscribe = DistributedPubSubMediator.Subscribe
+  protected[scards] val Subscribe = DistributedPubSubMediator.Subscribe
 
-  val SubscribeAck = DistributedPubSubMediator.SubscribeAck
+  protected[scards] val SubscribeAck = DistributedPubSubMediator.SubscribeAck
 
-  val Unsubscribe = DistributedPubSubMediator.Unsubscribe
+  protected[scards] val Unsubscribe = DistributedPubSubMediator.Unsubscribe
 
-  val UnsubscribeAck = DistributedPubSubMediator.UnsubscribeAck
+  protected[scards] val UnsubscribeAck = DistributedPubSubMediator.UnsubscribeAck
 
-  case class CardNew (id: String, name: String)
+  protected[scards] case class CardNew (id: String, name: String)
 
-  case class CardDelete (id: String)
+  protected[scards] case class CardDelete (id: String)
 
-  case class FolksonomyWord (sentiment: String, word: String)
+  protected[scards] case class FolksonomyWord (sentiment: String, word: String)
 
-  case class FolksonomyUpdate (card: String, sentiment: String, action: String, word: String)
+  protected[scards] case class FolksonomyUpdate (card: String, sentiment: String, action: String, word: String)
 
-  case class Comment (comment: String)
+  protected[scards] case class Comment (comment: String)
 
-  case class CommentData (sentiment: String, folksonomies: List[String])
+  protected[scards] case class CommentData (sentiment: String, folksonomies: List[String])
 
-  case class Sentiment (sentiment: String)
+  protected[scards] case class Sentiment (sentiment: String)
 
-  case class AmountUpdate (card: String, sentiment: String, amounts: Int)
+  protected[scards] case class AmountUpdate (card: String, sentiment: String, amounts: Int)
 
-  case class SentimentUpdate (card: String, value: Float)
+  protected[scards] case class SentimentUpdate (card: String, value: Float)
 
-  case class BarsUpdate (card: String, sentimentBars: Map[String, Float])
+  protected[scards] case class BarsUpdate (card: String, sentimentBars: Map[String, Float])
 
-  case class ClientSubscription (event: String, socket: ActorRef)
+  protected[scards] case class ClientSubscription (event: String, socket: ActorRef)
 }

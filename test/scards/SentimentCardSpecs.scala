@@ -1,3 +1,5 @@
+package scards
+
 import scards._
 
 import scala.concurrent.duration._
