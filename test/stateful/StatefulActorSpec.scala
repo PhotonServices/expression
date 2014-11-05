@@ -1,23 +1,50 @@
 package stateful
 
-import org.scalatest.FlatSpec
+import scala.concurrent.duration._
+import scala.concurrent.Await
 
-class StatefulActorSpec extends FlatSpec {
+import akka.actor._
+import akka.pattern.ask
+import akka.util.Timeout
 
-  val actor = new StatefulActor[Int] {
-    val initial = 0
-    val mutation: Mutation = { 
-      case (state, x: Int) => state + x 
+import akka.testkit.{TestActors, TestKit, ImplicitSender}
+import akka.testkit.TestActorRef
+
+import org.scalatest.WordSpecLike
+import org.scalatest.Matchers
+import org.scalatest.BeforeAndAfterAll
+
+class StatefulActorSpec extends TestKit(ActorSystem("stateful-test"))
+with ImplicitSender
+with WordSpecLike 
+with Matchers 
+with BeforeAndAfterAll {
+
+  import system.dispatcher
+  implicit val timeout = Timeout(5 seconds)
+
+  override def afterAll {
+    TestKit.shutdownActorSystem(system)
+  }
+
+  "A StatefulActor" should {
+
+    class TestActor extends Actor with Chainer with StatefulActor[Int] {
+      var state = 1
+      def mutate: Mutate = { 
+        case (state, i: Int) => 
+          val newState = state * i + 1 
+          sender ! newState
+          newState
+      }
     }
-  }
 
-  "A Stateful Actor" should "initialize" in {
-    assert(actor.get == 0)
-  }
+    val ref = TestActorRef(new TestActor)
+    val actor = ref.underlyingActor
 
-  it should "mutate" in {
-    actor.mutate(1)
-    actor.mutate(4)
-    assert(actor.get == 5)
+    "mutate" in {
+      val result = (ref ? 4).value.get.get
+      assert(actor.state == result)
+    }
   }
 }
