@@ -7,30 +7,23 @@ package stateful
 import akka.actor.Actor
 import akka.persistence._
 
-trait Chain { 
-
-  var chain: Actor.Receive = Actor.emptyBehavior
-
-  def lastly: Actor.Receive = Actor.emptyBehavior
-
-  def |<<<| (link: Actor.Receive) = chain = chain orElse link
-}
-
-trait Chainer extends Chain {
-  this: Actor =>
-
-  def receive = chain orElse lastly
-}
-
 trait Stateful[A] {
 
-  type Mutate = PartialFunction[Tuple2[A, Any], A]
+  type Mutate = PartialFunction[(A, Any), A]
+
+  private var callbacks: List[A => Unit] = Nil
 
   var state: A
 
   def mutate: Mutate 
 
-  def mutation (x: Any) = state = mutate(state, x)
+  def mutation (x: Any) = {
+    val oldstate = state
+    state = mutate(state, x)
+    callbacks foreach(_(oldstate, state))
+  }
+
+  def onMutation (f: (A, A)=>Unit) = callbacks = f :: callbacks
 }
 
 trait StatefulActor[A] extends Stateful[A] with Chain {
