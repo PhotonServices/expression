@@ -18,15 +18,14 @@ trait Stateful[A] {
   def mutate: Mutate 
 
   def mutation (x: Any) = {
-    val oldstate = state
     state = mutate(state, x)
-    callbacks foreach(_(oldstate, state))
+    callbacks.foreach(_(state))
   }
 
-  def onMutation (f: (A, A)=>Unit) = callbacks = f :: callbacks
+  def onMutation (f: A => Unit) = callbacks = f :: callbacks
 }
 
-trait StatefulActor[A] extends Stateful[A] with Chain {
+trait StatefulActor[A] extends Stateful[A] with Chainer {
 
   |<<<| { 
     case x: Any if mutate isDefinedAt (state, x) => 
@@ -42,27 +41,23 @@ trait StatefulPersistentActor[A]
 extends PersistentActor 
 with Stateful[A] 
 with Chain {
-this: Actor =>
-
-  import StatefulPersistentActor.Snapshot
 
   |<<<| { 
-    case Snapshot => saveSnapshot(state)
+    case StatefulPersistentActor.Snapshot => saveSnapshot(state)
     case x: Any if mutate isDefinedAt (state, x) => 
       persist(x)(mutation)
   }
 
-  def recoveryCompleted: Unit = {}
-
   val receiveRecover: Receive = {
-    case RecoveryCompleted => recoveryCompleted
+    case RecoveryCompleted => 
+      recoveryCompleted
     case SnapshotOffer(_, snapshot) => 
-      println(s"SNAPSHOT: $snapshot")
       state = snapshot.asInstanceOf[A]
     case x: Any => 
-      println(s"JOURNALED: $x")
       mutation(x)
   }
 
   val receiveCommand: Receive = chain orElse lastly
+
+  def recoveryCompleted: Unit = {}
 }
