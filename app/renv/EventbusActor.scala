@@ -11,8 +11,7 @@ import akka.contrib.pattern.DistributedPubSubMediator.{
 }
 
 trait EventbusActor extends Actor {
-  type Eventbus = ActorRef
-  val eventbus: Eventbus
+  val eventbus: ActorRef
   val busid = self.path.toString
   def publish (event: String, a: Any) = eventbus ! Publish(event, a)
   def subscribe (event: String) = eventbus ! Subscribe(event, self)

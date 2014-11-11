@@ -1,6 +1,6 @@
 package renv
 
-import renv.testing._
+import renv.examples._
 
 import akka.actor._
 import akka.testkit.{TestActors, TestKit, ImplicitSender}

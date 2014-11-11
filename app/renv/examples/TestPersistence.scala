@@ -1,4 +1,8 @@
-package renv.testing
+/**
+ * @author Francisco Miguel Arámburo Torres - atfm05@gmail.com
+ */
+
+package renv.examples
 
 import renv._
 
