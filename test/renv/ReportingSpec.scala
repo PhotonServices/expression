@@ -32,7 +32,7 @@ with BeforeAndAfterAll {
     "report" in {
       ref ! SumHead(4)
       fishForMessage(200 milliseconds) {
-        case Publish(event, Report(classification, List(5)), _) => 
+        case Publish(event, Report(classification, List(ListAdd(List(5)), ListRemove(List(1))) ), _) => 
           assert(event == id && classification == id)
           true
         case _ => false

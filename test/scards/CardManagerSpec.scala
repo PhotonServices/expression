@@ -1,6 +1,7 @@
 package scards
 
 import scards._
+import renv._
 
 import scala.concurrent.duration._
 import akka.actor._
@@ -20,38 +21,39 @@ with BeforeAndAfterAll {
     TestKit.shutdownActorSystem(system)
   }
 
-  var manager: ActorRef = null
-  var testid: String = ""
-
   "A CardManager" should {
 
-    "subscribe to 'client-subscription:card-new' on create" in {
-      manager = system.actorOf(Props(classOf[CardManager], self), "testing-cardmanager")
-      expectMsg(Subscribe("client-subscription:card-new", manager))
-    }
+    val manager: ActorRef = system.actorOf(Props(new TestCardManager(self)), "testing-card-manager")
+    val managerId: String = manager.path.toString + ":state"
 
     "create a new SentimentCard" in {
-      manager ! CardNew("", "Testing")
+      manager ! CardNew(Scard("testing", "Testing"))
       fishForMessage(200 milliseconds) {
-        case Publish("card-new", CardNew(id, "Testing"), _) => 
-          testid = id
+        case Publish(event, Report(classification, List(ListAdd(List(Scard(id, name)))) ), _) => 
+          assert(id == "testing")
+          assert(name == "Testing")
+          assert(event == managerId && classification == managerId)
           true
         case _ => false
       }
     }
 
-    "deliver created cards on 'card-new' subscription" in {
-      manager ! ClientSubscription("card-new", self)
+    "deliver created cards on update request" in {
+      manager ! UpdateMe
       fishForMessage(200 milliseconds) {
-        case CardNew(id, "Testing") => true
+        case Report(managerId, List(Scard("testing", "Testing"))) => true
         case _ => false
       }
     }
 
     "delete a sentiment card" in {
-      manager ! CardDelete(testid)
+      manager ! CardDelete(Scard("testing", "Testing"))
       fishForMessage(200 milliseconds) {
-        case Publish("card-delete", CardDelete(testid), _) => true
+        case Publish(event, Report(classification, List(ListRemove(List(Scard(id, name)))) ), _) =>
+          assert(id == "testing")
+          assert(name == "Testing")
+          assert(event == managerId && classification == managerId)
+          true
         case _ => false
       }
     }

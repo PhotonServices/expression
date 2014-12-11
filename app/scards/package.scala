@@ -20,9 +20,13 @@ package object scards {
 
   protected[scards] val UnsubscribeAck = DistributedPubSubMediator.UnsubscribeAck
 
-  protected[scards] case class CardNew (id: String, name: String)
+  protected[scards] case class Scard (id: String, name: String)
 
-  protected[scards] case class CardDelete (id: String)
+  protected[scards] case class CardNew (card: Scard)
+
+  protected[scards] case class CardDelete (card: Scard)
+
+  // OLD
 
   protected[scards] case class FolksonomyWord (sentiment: String, word: String)
 

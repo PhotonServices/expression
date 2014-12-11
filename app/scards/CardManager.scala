@@ -4,9 +4,8 @@
 
 package scards
 
-import collection.mutable.Map
-
 import akka.actor._
+import renv._
 
 /** Singleton actor which handles the creation and deletion
  *  of sentiment cards, which are abstracted by a [[actors.SentimentCard]]
@@ -17,32 +16,41 @@ import akka.actor._
  *  'card-new' event, for every notification the CardManager
  *  redirects the message to every SentimentCard actor.
  */
-class CardManager (eventbus: ActorRef) extends Actor with ActorLogging {
-
-  val cards = Map[String, ActorRef]()
-
-  override def preStart() = eventbus ! Subscribe("client-subscription:card-new", self)
+sealed abstract class GenCardManager  
+extends Stateful[List[Scard]]
+with StateReporterActor 
+with ActorLogging {
+  var state: List[Scard] = Nil  
 
   def genId: String = java.util.UUID.randomUUID.toString filterNot(_ == '-')
 
-  def createSentimentCard (id: String, name: String) =
-    cards += (id -> context.actorOf(Props(classOf[SentimentCard], id, name, eventbus), id))
+  def createCard (id: String, name: String) =
+    context.actorOf(Props(classOf[SentimentCard], id, name, eventbus), id)
 
-  def deleteSentimentCard (id: String) = context.child(id) match {
-    case Some(child) =>
-      child ! PoisonPill
-      cards -= id
+  def deleteCard (id: String) = context.child(id) match {
+    case Some(child) => child ! PoisonPill
     case None => log.info("Tried to kill {} card but was already dead.", id)
   }
 
-  def receive = {
-    case CardNew(_, name) =>
-      createSentimentCard(genId, name)
-
-    case CardDelete(id) =>
-      deleteSentimentCard(id)
-
-    case ClientSubscription(event, socket) =>
-      cards foreach { case (id, card) => card ! ClientSubscription(event, socket) }
+  def mutate: Mutate = {
+    case (xs, CardNew(card)) => 
+      if (card.id == "")
+        createCard(genId, card.name)
+      else
+        createCard(card.id, card.name)
+      card :: xs
+    case (xs, CardDelete(card)) =>
+      deleteCard(card.id)
+      xs diff List(card) 
   }
 }
+
+class CardManager (val eventbus: ActorRef) 
+extends GenCardManager
+with StatefulPersistentActor[List[Scard]] {
+  def persistenceId = "card-manager"
+}
+
+class TestCardManager (val eventbus: ActorRef)
+extends GenCardManager
+with StatefulActor[List[Scard]]

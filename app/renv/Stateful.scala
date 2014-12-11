@@ -11,12 +11,13 @@ trait Stateful[A] {
   type Mutation = (A, Any)
   type Mutate = PartialFunction[Mutation, A]
   var state: A
-  private var callbacks: List[A => Unit] = Nil
-  def onMutation (f: A => Unit) = callbacks = f :: callbacks
+  private var callbacks: List[(A, A) => Unit] = Nil
+  def onMutation (f: (A, A) => Unit) = callbacks = f :: callbacks
   def mutate: Mutate 
   def mutation (a: Any) = {
-    state = mutate(state, a)
-    callbacks.foreach(_(state))
+    val old = state
+    state = mutate(old, a)
+    callbacks.foreach(_(old, state))
   }
 }
 

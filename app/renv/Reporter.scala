@@ -4,6 +4,7 @@
 
 package renv
 
+import scala.reflect.runtime.universe._
 import akka.actor.{Actor, ActorRef}
 
 trait Reporter {
@@ -15,10 +16,19 @@ trait Reporter {
 
 trait StateReporter extends Reporter {
   this: Stateful[_] =>
-  onMutation(report(_))
+  onMutation( (oldState, newState) => report((oldState, newState)) )
   def stateClassification: String
   def buildReport: ReportWriting = {
-    case state => Report(stateClassification, state)
+    case (x: List[Any], y: List[Any]) => 
+      val removes = x diff y
+      val adds = y diff x
+      var moves: List[ListMutation] = Nil
+      if (!removes.isEmpty)
+        moves = ListRemove(removes) :: moves
+      if (!adds.isEmpty)
+        moves = ListAdd(adds) :: moves
+      Report(stateClassification, moves)
+    case (oldState, newState) => Report(stateClassification, newState)
   }
 }
 

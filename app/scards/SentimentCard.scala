@@ -49,12 +49,6 @@ class SentimentCard (id: String, name: String, eventbus: ActorRef) extends Actor
   /** [[Folksonomy]] actor for this card. */
   val folksonomy: ActorRef = context.actorOf(Props(classOf[Folksonomy], id, eventbus), s"$id:folksonomy")
 
-  /** On creation publish it to the clients. */
-  override def preStart () = eventbus ! Publish("card-new", CardNew(id, name))
-
-  /** On deletion publish it to the clients. */
-  override def postStop () = eventbus ! Publish("card-delete", CardDelete(id))
-
   /** Creates a new [[SentimentAPIRequester]] actor to delegate the processing of a comment. */
   def processComment (comment: Comment) = println("!!! process text not yet implemented !!!")
 
@@ -72,9 +66,6 @@ class SentimentCard (id: String, name: String, eventbus: ActorRef) extends Actor
       processSentiment(sentiment)
       processFolksonomy(sentiment, folklist)
       sender ! PoisonPill
-
-    case ClientSubscription(event, socket) =>
-      socket ! CardNew(id, name)
   }
 
 }
