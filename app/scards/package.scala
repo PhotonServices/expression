@@ -26,6 +26,7 @@ package object scards {
 
   protected[scards] case class CardDelete (card: Scard)
 
+  protected[scards] case object Add
   // OLD
 
   protected[scards] case class FolksonomyWord (sentiment: String, word: String)

@@ -4,31 +4,30 @@
 
 package scards
 
-import collection.mutable.Map
-
 import akka.actor._
 
 /** Mantains the general statistics of the sentiment of
  *  a sentiment card.
  */
-class Stats (card: String, eventbus: ActorRef) extends Actor {
+sealed abstract class Stats (card: String, eventbus: ActorRef) 
+extends Stateful[StatsState]
+with StateReporterActor {
 
-  var sentimentFinal = 0f
-
-  val sentimentBars = Map(
+  var state = StatsState(
+    0f,
+    Map(
     "excellent" -> 0f,
     "good" -> 0f,
     "neutral" -> 0f,
     "bad" -> 0f,
-    "terrible" -> 0f)
-
-  val amounts = Map(
+    "terrible" -> 0f),
+    Map(
     "total" -> 0,
     "excellent" -> 0,
     "good" -> 0,
     "neutral" -> 0,
     "bad" -> 0,
-    "terrible" -> 0)
+    "terrible" -> 0))
 
   override def preStart() = {
     eventbus ! Subscribe(s"client-subscription:$card:sentiment-final", self)
