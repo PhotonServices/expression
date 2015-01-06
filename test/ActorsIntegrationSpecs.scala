@@ -37,7 +37,8 @@ import actors.{
   SentimentStats,
   Folksonomy,
   SentimentAPIRequester,
-  Demoer}
+  Demoer,
+  Tinga}
 
 import WebSocketRouter.{
   ClientIn,
@@ -81,6 +82,7 @@ with BeforeAndAfterAll {
   var stats: ActorRef = _
   var folksonomy: ActorRef = _
   var sentimentApi: ActorRef = _
+  var tinga: ActorRef = _
 
   Play.start(FakeApplication(additionalConfiguration = Map(
     "sentiment.service" -> "http://localhost:8000/comments",
@@ -108,6 +110,7 @@ with BeforeAndAfterAll {
     stats = system.actorOf(SentimentStats.props("testid"))
     folksonomy = system.actorOf(Folksonomy.props("testid"))
     sentimentApi = system.actorOf(SentimentAPIRequester.props(self))
+    tinga = system.actorOf(Tinga.props(self))
   }
 
   override def afterAll {
@@ -390,4 +393,30 @@ with BeforeAndAfterAll {
       unsubscribe("testid:folksonomy-excellent:add")
     }
   }
+
+  /**
+   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+   * S8: SentimentAPIRequester
+   *
+   *
+   */
+  "Tinga actor" should {
+
+    "return a single sentence comment data" in {
+      tinga ! Comment("Me encanta el nuevo iphone.")
+      expectMsg(CommentData("good", List("nuevo iphone")))
+    }
+
+    "return multiple sentence comment data" in {
+      tinga ! Comment("Me encanta el nuevo iphone. Lo malo es el precio")
+      expectMsg(CommentData("good", List("nuevo iphone")))
+      expectMsg(CommentData("bad", List("precio")))
+    }
+
+    "extra test" in {
+      tinga ! Comment("Me gusta mucho el color rojo")
+      expectMsg(CommentData("excellent", List("color rojo")))
+    }
+  }
+
 }
