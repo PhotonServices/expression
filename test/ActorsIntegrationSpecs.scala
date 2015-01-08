@@ -67,6 +67,9 @@ import Folksonomy.{
 import Demoer.{
   Commands}
 
+import Tinga.{
+  EndOfCommentData}
+
 class ActorsIntegrationSpec (_system: ActorSystem) extends TestKit(_system)
 with ImplicitSender
 with WordSpecLike
@@ -405,17 +408,20 @@ with BeforeAndAfterAll {
     "return a single sentence comment data" in {
       tinga ! Comment("Me encanta el nuevo iphone.")
       expectMsg(CommentData("good", List("nuevo iphone")))
+      expectMsg(EndOfCommentData)
     }
 
     "return multiple sentence comment data" in {
       tinga ! Comment("Me encanta el nuevo iphone. Lo malo es el precio")
       expectMsg(CommentData("good", List("nuevo iphone")))
       expectMsg(CommentData("bad", List("precio")))
+      expectMsg(EndOfCommentData)
     }
 
     "extra test" in {
       tinga ! Comment("Me gusta mucho el color rojo")
       expectMsg(CommentData("excellent", List("color rojo")))
+      expectMsg(EndOfCommentData)
     }
   }
 

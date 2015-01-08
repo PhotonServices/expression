@@ -80,6 +80,9 @@ class SentimentCard (id: String, name: String) extends Actor {
   import Folksonomy.{
     FolksonomyWord}
 
+  import Tinga.{
+    EndOfCommentData}
+
   /** [[SentimentStats]] actor for this card. */
   val stats: ActorRef  = context.actorOf(SentimentStats.props(id), s"$id:stats")
 
@@ -96,7 +99,8 @@ class SentimentCard (id: String, name: String) extends Actor {
 
   /** Creates a new [[SentimentAPIRequester]] actor to delegate the processing of a comment. */
   def processComment (comment: Comment) =
-      context.actorOf(SentimentAPIRequester.props(self), genId).forward(comment)
+    context.actorOf(Tinga.props(self), genId).forward(comment)
+    //context.actorOf(SentimentAPIRequester.props(self), genId).forward(comment)
 
   def processSentiment (sentiment: String) =
     stats ! Sentiment(sentiment)
@@ -111,6 +115,10 @@ class SentimentCard (id: String, name: String) extends Actor {
     case CommentData(sentiment, folklist) =>
       processSentiment(sentiment)
       processFolksonomy(sentiment, folklist)
+      // Kill here if using the Python API. Comment otherwise.
+      //sender ! PoisonPill
+
+    case EndOfCommentData =>
       sender ! PoisonPill
 
     case ClientSubscription(event, socket) =>
