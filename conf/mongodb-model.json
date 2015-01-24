@@ -1,0 +1,40 @@
+db.scards [
+  {
+    _id: "string",
+    name: "string",
+    sentiment_final: 1.0,
+    sentiment_bars: {
+      excellent: 20,
+      good: 20,
+      neutral: 20,
+      bad: 20,
+      terrible: 20
+    },
+    amounts: {
+      total: 123,
+      excellent: 123,
+      good: 123,
+      neutral: 123,
+      bad: 123,
+      terrible: 123
+    },
+    folksonomy_top: {
+      global: ["string"...],
+      excellent: ["string"...],
+      good: ["string"...],
+      neutral: ["string"...],
+      bad: ["string"...],
+      terrible: ["string"...]
+    },
+    folksonomy_global: {
+      excellent: ["string"...],
+      good: ["string"...],
+      neutral: ["string"...],
+      bad: ["string"...],
+      terrible: ["string"...]
+    }
+  }
+.
+.
+.
+]

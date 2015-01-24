@@ -6,6 +6,8 @@ package actors
 
 import akka.actor._
 
+case class Scard (id: String, name: String)
+
 /** Companion object with all the messages that involves 
  *  interaction with [[actors.SentimentCard]] actors.
  */

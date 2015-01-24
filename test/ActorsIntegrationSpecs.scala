@@ -90,8 +90,7 @@ with BeforeAndAfterAll {
   Play.start(FakeApplication(additionalConfiguration = Map(
     "sentiment.service" -> "http://localhost:8000/comments",
     "sentiment.folksonomy.threshold" -> 5,
-    "mongo.service" -> "none",
-    "mongo.port" -> 0
+    "mongo.service" -> ""
   )))
 
   def this() = this(ActorSystem("ActorsIntegrationSpecsSystem"))
