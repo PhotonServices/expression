@@ -9,20 +9,22 @@ case class BadArguments (m: String) extends Exception(m)
 object Mongo {
   
   def confInfo = Tuple3(current.configuration.getString("mongo.host") match {
-    case Some(value) => if (value == "") None else value 
+    case Some(value) => if (value == "") None else Some(value)
     case None => None
   }, current.configuration.getInt("mongo.port") match {
-    case Some(value) => if (value == 0) None else value 
+    case Some(value) => if (value == 0) None else Some(value)
     case None => None
   },current.configuration.getString("mongo.db") match {
-    case Some(value) => if (value == "") None else value 
+    case Some(value) => if (value == "") None else Some(value)
     case None => None
   })
 
   val mongo: Option[MongoDB] = confInfo match {
-    case (Some(h: String), Some(p: Int), Some(d: String)) => Some(MongoClient(h, p)(d))
+    case Tuple3(Some(host), Some(port), Some(db)) => Some(MongoClient(host, port)(db))
     case _ => None
   }
+
+  def p[A] (a: A): Unit = println(a.getClass + " :: " + a)
 
   val scards = new ScardsCollection(mongo)
 

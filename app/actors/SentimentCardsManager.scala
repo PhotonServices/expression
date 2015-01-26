@@ -53,7 +53,13 @@ class SentimentCardsManager extends Actor with ActorLogging {
 
   val cards = Map[String, ActorRef]()
 
-  override def preStart() = Actors.mediator ! Subscribe("client-subscription:card-new", self)
+  override def preStart() = {
+    Actors.mediator ! Subscribe("client-subscription:card-new", self)
+    Mongo.scards.getScards("all meta") match {
+      case FailedQuery(error) => throw error 
+      case Result(scards) => println(scards); scards foreach { card => createSentimentCard(card.id, card.name) }
+    }
+  }
 
   def genId: String = java.util.UUID.randomUUID.toString
 
