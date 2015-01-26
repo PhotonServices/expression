@@ -17,6 +17,8 @@ object SentimentCardsManager {
   /** Message to delete an existing sentiment card. */
   case class CardDelete (id: String)
 
+  case object Wake
+
   /** Constructor for [[SentimentCardsManager]] actor props. 
    *
    * @return Props of SentimentCardsManager. 
@@ -46,7 +48,8 @@ class SentimentCardsManager extends Actor with ActorLogging {
 
   import SentimentCardsManager.{
     CardNew,
-    CardDelete}
+    CardDelete,
+    Wake}
 
   import WebSocketRouter.{
     ClientSubscription}
@@ -57,7 +60,7 @@ class SentimentCardsManager extends Actor with ActorLogging {
     Actors.mediator ! Subscribe("client-subscription:card-new", self)
     Mongo.scards.getScards("all meta") match {
       case FailedQuery(error) => throw error 
-      case Result(scards) => println(scards); scards foreach { card => createSentimentCard(card.id, card.name) }
+      case Result(scards) => scards foreach { card => createSentimentCard(card.id, card.name) }
     }
   }
 
@@ -82,5 +85,7 @@ class SentimentCardsManager extends Actor with ActorLogging {
 
     case ClientSubscription(event, socket) =>
       cards foreach { case (id, card) => card ! ClientSubscription(event, socket) }
+
+    case Wake => log.info("SentimentCardsManager awake.")
   }
 }

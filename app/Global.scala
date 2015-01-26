@@ -9,6 +9,7 @@ object Global extends GlobalSettings {
 
   override def onStart(app: Application) {
     Actors(app)
+    Actors.sentimentCardsManager ! actors.SentimentCardsManager.Wake
   }
 
 }
