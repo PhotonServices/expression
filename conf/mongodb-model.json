@@ -27,11 +27,11 @@ db.scards [
       terrible: ["string"...]
     },
     folksonomy_global: {
-      excellent: ["string"...],
-      good: ["string"...],
-      neutral: ["string"...],
-      bad: ["string"...],
-      terrible: ["string"...]
+      excellent: { "word1": 12, "word2": 10 ... },
+      good: { "word1": 12, "word2": 10 ... },
+      neutral: { "word1": 12, "word2": 10 ... },
+      bad: { "word1": 12, "word2": 10 ... },
+      terrible: { "word1": 12, "word2": 10 ... } 
     }
   }
 .

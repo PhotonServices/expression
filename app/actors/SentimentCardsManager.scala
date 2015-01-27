@@ -58,7 +58,7 @@ class SentimentCardsManager extends Actor with ActorLogging {
 
   override def preStart() = {
     Actors.mediator ! Subscribe("client-subscription:card-new", self)
-    Mongo.scards.getScards("all meta") match {
+    Argument("all meta") >>= Mongo.scards.getScards match {
       case FailedQuery(error) => throw error 
       case Result(scards) => scards foreach { card => createSentimentCard(card.id, card.name) }
     }
@@ -66,8 +66,18 @@ class SentimentCardsManager extends Actor with ActorLogging {
 
   def genId: String = java.util.UUID.randomUUID.toString
 
+  def dbCreateSentimentCard (id: String, name: String) = 
+    Argument(Scard(id, name)) >>= Mongo.scards.createScard match {
+      case _ => createSentimentCard(id, name)
+    }
+
   def createSentimentCard (id: String, name: String) =
     cards += (id -> context.actorOf(SentimentCard.props(id, name), id))
+
+  def dbDeleteSentimentCard (id: String) =
+    Argument(Scard(id, "")) >>= Mongo.scards.deleteScard match {
+      case _ => deleteSentimentCard(id)
+    }
 
   def deleteSentimentCard (id: String) = context.child(id) match {
     case Some(child) => 
@@ -78,10 +88,10 @@ class SentimentCardsManager extends Actor with ActorLogging {
 
   def receive = {
     case CardNew(_, name) => 
-      createSentimentCard(genId, name)
+      dbCreateSentimentCard(genId, name)
 
     case CardDelete(id) => 
-      deleteSentimentCard(id)
+      dbDeleteSentimentCard(id)
 
     case ClientSubscription(event, socket) =>
       cards foreach { case (id, card) => card ! ClientSubscription(event, socket) }

@@ -60,6 +60,51 @@ class ScardsCollection (val db: Option[MongoDB]) extends Collection {
     case _ => 
       FailedQuery(BadArguments("for getScards"))
   }
+
+  def createScard (args: Scard): Query[Success, Unit] = 
+    if (coll == null) Result(Failed) else {
+      coll.insert(MongoDBObject(
+        "_id" -> args.id, 
+        "name" -> args.name,
+        "sentiment_final" -> 1,
+        "sentiment_bars" -> MongoDBObject(
+          "excellent" -> 0,
+          "good" -> 0,
+          "neutral" -> 0,
+          "bad" -> 0,
+          "terrible" -> 0
+        ),
+        "amounts" -> MongoDBObject(
+          "total" -> 0,
+          "excellent" -> 0,
+          "neutral" -> 0,
+          "bad" -> 0,
+          "terrible" -> 0
+        ),
+        "folksonomy_top" -> MongoDBObject(
+          "global" -> List(),
+          "excellent" -> List(),
+          "good" -> List(),
+          "neutral" -> List(),
+          "bad" -> List(),
+          "terrible" -> List()
+        ),
+        "folksonomy_global" -> MongoDBObject(
+          "excellent" -> MongoDBObject(),
+          "good" -> MongoDBObject(),
+          "neutral" -> MongoDBObject(),
+          "bad" -> MongoDBObject(),
+          "terrible" -> MongoDBObject()
+        )
+      ))
+      Result(Succeeded)
+    }
+
+  def deleteScard (args: Scard): Query[Success, Unit] = 
+    if (coll == null) Result(Failed) else {
+      coll.remove(MongoDBObject("_id" -> args.id))
+      Result(Succeeded)
+    }
 }
 
 class CommentsCollection (val db: Option[MongoDB]) extends Collection {
@@ -80,25 +125,21 @@ case object Succeeded extends Success
 case object Failed extends Success
 
 trait Query[A, E] {
-  def >>=[B] (f: A => B): Query[B, E]
-  def >=>[B] (f: A => Query[B, E]): Query[B, E]
-  def liftError[F] (f: E => F): Query[A, F]
+  def >=>[B] (f: A => B): Query[B, E]
+  def >>=[B] (f: A => Query[B, E]): Query[B, E]
 }
 
 case class Argument[A, E] (a: A) extends Query[A, E] { 
-  def >>=[R] (f: A => R): Query[R, E] = Result(f(a))
-  def >=>[R] (f: A => Query[R, E]): Query[R, E] = f(a)
-  def liftError[F] (f: E => F): Query[A, F] = Argument(a)
+  def >=>[R] (f: A => R): Query[R, E] = Result(f(a))
+  def >>=[R] (f: A => Query[R, E]): Query[R, E] = f(a)
 }
 
 case class Result[R, E] (r: R) extends Query[R, E] {
-  def >>=[A] (f: R => A): Query[A, E] = Argument(f(r))
-  def >=>[A] (f: R => Query[A, E]): Query[A, E] = f(r)
-  def liftError[F] (f: E => F): Query[R, F] = Result(r)
+  def >=>[A] (f: R => A): Query[A, E] = Argument(f(r))
+  def >>=[A] (f: R => Query[A, E]): Query[A, E] = f(r)
 }
 
 case class FailedQuery[A, E] (e: E) extends Query[A, E] {
-  def >>=[B] (f: A => B): Query[B, E] = FailedQuery(e)
-  def >=>[B] (f: A => Query[B, E]): Query[B, E] = FailedQuery(e)
-  def liftError[F] (f: E => F): Query[A, F] = FailedQuery(f(e))
+  def >=>[B] (f: A => B): Query[B, E] = FailedQuery(e)
+  def >>=[B] (f: A => Query[B, E]): Query[B, E] = FailedQuery(e)
 }
