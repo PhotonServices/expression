@@ -42,22 +42,34 @@ class SentimentStats (card: String) extends Actor {
     AmountUpdate,
     BarsUpdate}
 
-  var sentimentFinal = 0f
+  var sentimentFinal = Argument(Scard(card, "")) >>= Mongo.scards.getSentimentFinal match {
+    case Result(r) => r
+  }
 
-  val sentimentBars = Map(
-    "excellent" -> 0f,
-    "good" -> 0f,
-    "neutral" -> 0f,
-    "bad" -> 0f,
-    "terrible" -> 0f)
+  /**
+   * Map(
+   * "excellent" -> 0f,
+   * "good" -> 0f,
+   * "neutral" -> 0f,
+   * "bad" -> 0f,
+   * "terrible" -> 0f)
+   */
+  val sentimentBars = Argument(Scard(card, "")) >>= Mongo.scards.getSentimentBars match {
+    case Result(r) => r
+  }
 
-  val amounts = Map(
-    "total" -> 0,
-    "excellent" -> 0,
-    "good" -> 0,
-    "neutral" -> 0,
-    "bad" -> 0,
-    "terrible" -> 0)
+  /**
+   *  Map(
+   *  "total" -> 0,
+   *  "excellent" -> 0,
+   *  "good" -> 0,
+   *  "neutral" -> 0,
+   *  "bad" -> 0,
+   *  "terrible" -> 0)
+   */
+  val amounts = Argument(Scard(card, "")) >>= Mongo.scards.getAmounts match {
+    case Result(r) => r
+  }
 
   override def preStart() = {
     Actors.mediator ! Subscribe(s"client-subscription:$card:sentiment-final", self)

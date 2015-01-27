@@ -1,5 +1,6 @@
 package actors
 
+import collection.mutable.Map
 import com.mongodb.casbah.Imports._
 import play.api.Play.current
 
@@ -104,6 +105,49 @@ class ScardsCollection (val db: Option[MongoDB]) extends Collection {
     if (coll == null) Result(Failed) else {
       coll.remove(MongoDBObject("_id" -> args.id))
       Result(Succeeded)
+    }
+
+  def getSentimentFinal (args: Scard): Query[Float, Unit] =
+    if (coll == null) Result(0f) else {
+      Result(coll.findOne(MongoDBObject("_id" -> args.id)).get("sentiment_final").asInstanceOf[Double].toFloat)
+    }
+
+  def getSentimentBars (args: Scard): Query[Map[String, Float], Unit] =
+    if (coll == null) Result(Map(
+      "excellent" -> 0f,
+      "good" -> 0f,
+      "neutral" -> 0f,
+      "bad" -> 0f,
+      "terrible" -> 0f))
+    else { 
+      val r = coll.findOne(MongoDBObject("_id" -> args.id)).get.getAs[MongoDBObject]("sentiment_bars").get
+      Result(Map(
+      "excellent" -> r.getAs[Double]("excellent").get.toFloat,
+      "good" -> r.getAs[Double]("good").get.toFloat,
+      "neutral" -> r.getAs[Double]("neutral").get.toFloat,
+      "bad" -> r.getAs[Double]("bad").get.toFloat,
+      "terrible" -> r.getAs[Double]("terrible").get.toFloat
+      ))
+    }
+
+  def getAmounts (args: Scard): Query[Map[String, Int], Unit] =
+    if (coll == null) Result(Map(
+      "total" -> 0,
+      "excellent" -> 0,
+      "good" -> 0,
+      "neutral" -> 0,
+      "bad" -> 0,
+      "terrible" -> 0))
+    else {
+      val r = coll.findOne(MongoDBObject("_id" -> args.id)).get.getAs[MongoDBObject]("amounts").get
+      Result(Map(
+      "total" -> r.getAs[Int]("total").get,
+      "excellent" -> r.getAs[Int]("excellent").get,
+      "good" -> r.getAs[Int]("good").get,
+      "neutral" -> r.getAs[Int]("neutral").get,
+      "bad" -> r.getAs[Int]("bad").get,
+      "terrible" -> r.getAs[Int]("terrible").get
+      ))
     }
 }
 
