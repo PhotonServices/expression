@@ -81,6 +81,7 @@ class SentimentStats (card: String) extends Actor {
 
   def recalculateSentimentAmount (sentiment: String) = {
     amounts(sentiment) = amounts(sentiment) + 1 
+    Argument((Scard(card, ""), amounts)) >>= Mongo.scards.updateAmounts
     Actors.mediator ! Publish(s"$card:count-$sentiment", AmountUpdate(card, sentiment, amounts(sentiment)))
   }
 
@@ -96,14 +97,17 @@ class SentimentStats (card: String) extends Actor {
         case "terrible" => sum + num * -2f
       }
     } / amounts("total") 
-    if (lastSentiment != sentimentFinal)
+    if (lastSentiment != sentimentFinal) {
+      Argument((Scard(card, ""), sentimentFinal)) >>= Mongo.scards.updateSentimentFinal
       Actors.mediator ! Publish(s"$card:sentiment-final", SentimentUpdate(card, sentimentFinal))
+    }
   }
 
   def recalculateSentimentBars = {
     amounts - "total" map {
       case (sentiment, num) => sentimentBars(sentiment) = num * 100f / amounts("total")
     }
+    Argument((Scard(card, ""), sentimentBars)) >>= Mongo.scards.updateSentimentBars
     Actors.mediator ! Publish(s"$card:sentiment-bars", BarsUpdate(card, sentimentBars.toMap))
   }
 

@@ -112,6 +112,14 @@ class ScardsCollection (val db: Option[MongoDB]) extends Collection {
       Result(coll.findOne(MongoDBObject("_id" -> args.id)).get("sentiment_final").asInstanceOf[Double].toFloat)
     }
 
+  def updateSentimentFinal (args: Tuple2[Scard, Float]): Query[Success, Unit] =
+    if (coll == null) Result(Succeeded) else {
+      val scard = args._1
+      val sentiment = args._2
+      coll.update(MongoDBObject("_id" -> scard.id), $set("sentiment_final" -> sentiment))
+      Result(Succeeded)
+    }
+
   def getSentimentBars (args: Scard): Query[Map[String, Float], Unit] =
     if (coll == null) Result(Map(
       "excellent" -> 0f,
@@ -128,6 +136,23 @@ class ScardsCollection (val db: Option[MongoDB]) extends Collection {
       "bad" -> r.getAs[Double]("bad").get.toFloat,
       "terrible" -> r.getAs[Double]("terrible").get.toFloat
       ))
+    }
+
+  def updateSentimentBars (args: Tuple2[Scard, Map[String, Float]]): Query[Success, Unit] =
+    if (coll == null) Result(Succeeded) else {
+      val s = args._1
+      val m = args._2
+      coll.update(MongoDBObject(
+        "_id" -> s.id
+      ),
+      $set("sentiment_bars" -> MongoDBObject(
+        "excellent" -> m("excellent"),
+        "good" -> m("good"),
+        "neutral" -> m("neutral"),
+        "bad" -> m("bad"),
+        "terrible" -> m("terrible")
+      )))
+      Result(Succeeded)
     }
 
   def getAmounts (args: Scard): Query[Map[String, Int], Unit] =
@@ -148,6 +173,24 @@ class ScardsCollection (val db: Option[MongoDB]) extends Collection {
       "bad" -> r.getAs[Int]("bad").get,
       "terrible" -> r.getAs[Int]("terrible").get
       ))
+    }
+
+  def updateAmounts (args: Tuple2[Scard, Map[String, Int]]): Query[Success, Unit] =
+    if (coll == null) Result(Succeeded) else {
+      val s = args._1
+      val m = args._2
+      coll.update(MongoDBObject(
+        "_id" -> s.id
+      ),
+      $set("amounts" -> MongoDBObject(
+        "total" -> m("total"),
+        "excellent" -> m("excellent"),
+        "good" -> m("good"),
+        "neutral" -> m("neutral"),
+        "bad" -> m("bad"),
+        "terrible" -> m("terrible")
+      )))
+      Result(Succeeded)
     }
 }
 
