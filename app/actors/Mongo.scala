@@ -109,7 +109,7 @@ class ScardsCollection (val db: Option[MongoDB]) extends Collection {
 
   def getSentimentFinal (args: Scard): Query[Float, Unit] =
     if (coll == null) Result(0f) else {
-      Result(coll.findOne(MongoDBObject("_id" -> args.id)).get("sentiment_final").toFloat)
+        Result(coll.findOne(MongoDBObject("_id" -> args.id)).get.getAs[Int]("sentiment_final").get.toFloat)
     }
 
   def updateSentimentFinal (args: Tuple2[Scard, Float]): Query[Success, Unit] =
