@@ -7,6 +7,37 @@ import play.api.Play.current
 case object MissingDBException extends Exception
 case class BadArguments (m: String) extends Exception(m)
 
+case class Scard (id: String, name: String,
+  sentimentFinal: Double = 0d,
+  sentimentBars: Map[Sentiment, Double] = Map(
+    "excellent" -> 0d,
+    "good" -> 0d,
+    "neutral" -> 0d,
+    "bad" -> 0d,
+    "terrible" -> 0d),
+  amounts: Map[Sentiment, Int] = Map(
+    "total" -> 0,
+    "excellent" -> 0,
+    "good" -> 0,
+    "neutral" -> 0,
+    "bad" -> 0,
+    "terrible" -> 0),
+  folksonomyTop: Map[Sentiment, Set[Word]] = Map(
+    "global" -> Set.empty,
+    "excellent" -> Set.empty,
+    "good" -> Set.empty,
+    "neutral" -> Set.empty,
+    "bad" -> Set.empty,
+    "terrible" -> Set.empty),
+  folksonomyGlobal: Map[Sentiment, Map[Word, Hits]] = Map(
+    "excellent" -> Map.empty,
+    "good" -> Map.empty,
+    "neutral" -> Map.empty,
+    "bad" -> Map.empty,
+    "terrible" -> Map.empty)
+  )
+
+
 object Mongo {
   
   def confInfo = Tuple3(current.configuration.getString("mongo.host") match {
@@ -48,32 +79,50 @@ trait Collection {
 }
 
 class ScardsCollection (val db: Option[MongoDB]) extends Collection {
+
   val coll: MongoCollection = db match {
     case Some(db) => db("scards")
     case None => null
   }
 
-  def getScards (args: String): Query[List[Scard], BadArguments] = if (coll == null) Result(List()) else args match {
-    case "all meta" => 
-      Result(coll.find(MongoDBObject(), MongoDBObject("name" -> 1)).map({ scard =>
-        Scard(scard("_id").toString, scard("name").toString) 
-      }).toList)
-    case _ => 
-      FailedQuery(BadArguments("for getScards"))
+  def getScards (args: String): Query[List[Scard], BadArguments] = 
+    if (coll == null) Result(List()) else args match {
+      case "all meta" => 
+        Result(coll.find(MongoDBObject(), MongoDBObject("name" -> 1)).map({ scard =>
+          Scard(scard("_id").toString, scard("name").toString) 
+        }).toList)
+      case _ => 
+        FailedQuery(BadArguments("for getScards"))
   }
+
+  def getScard (empty: Scard): Query[Scard, Unit] =
+    if (coll == null) Result(Scard(empty.id, empty.name)) else {
+      Result(coll.findOne(MongoDBObject("_id" -> empty.id)) match {
+        case Some(scard) => Scard(empty.id, empty.name,
+            sentimentFinal = scard.getAs[Double]("sentiment_final").get,
+            sentimentBars = scard.getAs[Map[Sentiment, Double]]("sentiment_bars").get,
+            amounts = scard.getAs[Map[Sentiment, Int]]("amounts").get,
+            folksonomyTop = scard.getAs[Map[Sentiment, com.mongodb.BasicDBList]]("folksonomy_top").get map { 
+              m => (m._1, (m._2 map { x => x.toString }).toSet)},
+            folksonomyGlobal = scard.getAs[Map[Sentiment, com.mongodb.BasicDBObject]]("folksonomy_global").get map {
+              m => (m._1, m._2 map {x => (x._1, x._2.asInstanceOf[Int]) })}
+          )
+        case None => Scard(empty.id, empty.name)
+      })
+    }
 
   def createScard (args: Scard): Query[Success, Unit] = 
     if (coll == null) Result(Failed) else {
       coll.insert(MongoDBObject(
         "_id" -> args.id, 
         "name" -> args.name,
-        "sentiment_final" -> 1,
+        "sentiment_final" -> 1.0d,
         "sentiment_bars" -> MongoDBObject(
-          "excellent" -> 0,
-          "good" -> 0,
-          "neutral" -> 0,
-          "bad" -> 0,
-          "terrible" -> 0
+          "excellent" -> 0.0d,
+          "good" -> 0.0d,
+          "neutral" -> 0.0d,
+          "bad" -> 0.0d,
+          "terrible" -> 0.0d
         ),
         "amounts" -> MongoDBObject(
           "total" -> 0,
@@ -107,12 +156,7 @@ class ScardsCollection (val db: Option[MongoDB]) extends Collection {
       Result(Succeeded)
     }
 
-  def getSentimentFinal (args: Scard): Query[Float, Unit] =
-    if (coll == null) Result(0f) else {
-        Result(coll.findOne(MongoDBObject("_id" -> args.id)).get.getAs[Int]("sentiment_final").get.toFloat)
-    }
-
-  def updateSentimentFinal (args: Tuple2[Scard, Float]): Query[Success, Unit] =
+  def updateSentimentFinal (args: Tuple2[Scard, Double]): Query[Success, Unit] =
     if (coll == null) Result(Succeeded) else {
       val scard = args._1
       val sentiment = args._2
@@ -120,25 +164,7 @@ class ScardsCollection (val db: Option[MongoDB]) extends Collection {
       Result(Succeeded)
     }
 
-  def getSentimentBars (args: Scard): Query[Map[String, Float], Unit] =
-    if (coll == null) Result(Map(
-      "excellent" -> 0f,
-      "good" -> 0f,
-      "neutral" -> 0f,
-      "bad" -> 0f,
-      "terrible" -> 0f))
-    else { 
-      val r = coll.findOne(MongoDBObject("_id" -> args.id)).get.getAs[MongoDBObject]("sentiment_bars").get
-      Result(Map(
-      "excellent" -> r.getAs[Double]("excellent").get.toFloat,
-      "good" -> r.getAs[Double]("good").get.toFloat,
-      "neutral" -> r.getAs[Double]("neutral").get.toFloat,
-      "bad" -> r.getAs[Double]("bad").get.toFloat,
-      "terrible" -> r.getAs[Double]("terrible").get.toFloat
-      ))
-    }
-
-  def updateSentimentBars (args: Tuple2[Scard, Map[String, Float]]): Query[Success, Unit] =
+  def updateSentimentBars (args: Tuple2[Scard, Map[String, Double]]): Query[Success, Unit] =
     if (coll == null) Result(Succeeded) else {
       val s = args._1
       val m = args._2
@@ -153,26 +179,6 @@ class ScardsCollection (val db: Option[MongoDB]) extends Collection {
         "terrible" -> m("terrible")
       )))
       Result(Succeeded)
-    }
-
-  def getAmounts (args: Scard): Query[Map[String, Int], Unit] =
-    if (coll == null) Result(Map(
-      "total" -> 0,
-      "excellent" -> 0,
-      "good" -> 0,
-      "neutral" -> 0,
-      "bad" -> 0,
-      "terrible" -> 0))
-    else {
-      val r = coll.findOne(MongoDBObject("_id" -> args.id)).get.getAs[MongoDBObject]("amounts").get
-      Result(Map(
-      "total" -> r.getAs[Int]("total").get,
-      "excellent" -> r.getAs[Int]("excellent").get,
-      "good" -> r.getAs[Int]("good").get,
-      "neutral" -> r.getAs[Int]("neutral").get,
-      "bad" -> r.getAs[Int]("bad").get,
-      "terrible" -> r.getAs[Int]("terrible").get
-      ))
     }
 
   def updateAmounts (args: Tuple2[Scard, Map[String, Int]]): Query[Success, Unit] =
@@ -190,6 +196,18 @@ class ScardsCollection (val db: Option[MongoDB]) extends Collection {
         "bad" -> m("bad"),
         "terrible" -> m("terrible")
       )))
+      Result(Succeeded)
+    }
+
+  def setTopWordsForSentiment (args: Tuple3[String, Sentiment, Set[Word]]): Query[Success, Unit] =
+    if (coll == null) Result(Succeeded) else {
+      coll.update(MongoDBObject("_id" -> args._1), $set("folksonomy_top."+args._2 -> args._3.toList))
+      Result(Succeeded)
+    }
+
+  def addWord (args: Tuple4[String, Sentiment, Word, Hits]): Query[Success, Unit] =
+    if (coll == null) Result(Succeeded) else {
+      coll.update(MongoDBObject("_id" -> args._1), $set("folksonomy_global."+args._2+"."+args._3 -> args._4))
       Result(Succeeded)
     }
 }

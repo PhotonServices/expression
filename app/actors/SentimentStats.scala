@@ -15,9 +15,9 @@ object SentimentStats {
 
   case class AmountUpdate (card: String, sentiment: String, amounts: Int)
 
-  case class SentimentUpdate (card: String, value: Float)
+  case class SentimentUpdate (card: String, value: Double)
 
-  case class BarsUpdate (card: String, sentimentBars: Map[String, Float])
+  case class BarsUpdate (card: String, sentimentBars: Map[String, Double])
 
   def props (card: String): Props = Props(new SentimentStats(card))
 }
@@ -25,7 +25,7 @@ object SentimentStats {
 /** Mantains the general statistics of the sentiment of
  *  a sentiment card.
  */
-class SentimentStats (card: String) extends Actor {
+class SentimentStats (card: String, initData: Scard = Scard("", "")) extends Actor {
 
   import collection.mutable.Map
 
@@ -42,21 +42,17 @@ class SentimentStats (card: String) extends Actor {
     AmountUpdate,
     BarsUpdate}
 
-  var sentimentFinal = Argument(Scard(card, "")) >>= Mongo.scards.getSentimentFinal match {
-    case Result(r) => r
-  }
+  var sentimentFinal: Double = initData.sentimentFinal
 
   /**
    * Map(
-   * "excellent" -> 0f,
-   * "good" -> 0f,
-   * "neutral" -> 0f,
-   * "bad" -> 0f,
-   * "terrible" -> 0f)
+   * "excellent" -> 0d,
+   * "good" -> 0d,
+   * "neutral" -> 0d,
+   * "bad" -> 0d,
+   * "terrible" -> 0d)
    */
-  val sentimentBars = Argument(Scard(card, "")) >>= Mongo.scards.getSentimentBars match {
-    case Result(r) => r
-  }
+  val sentimentBars: Map[String, Double] = initData.sentimentBars
 
   /**
    *  Map(
@@ -67,9 +63,7 @@ class SentimentStats (card: String) extends Actor {
    *  "bad" -> 0,
    *  "terrible" -> 0)
    */
-  val amounts = Argument(Scard(card, "")) >>= Mongo.scards.getAmounts match {
-    case Result(r) => r
-  }
+  val amounts: Map[String, Int] = initData.amounts
 
   override def preStart() = {
     Actors.mediator ! Subscribe(s"client-subscription:$card:sentiment-final", self)
@@ -87,16 +81,16 @@ class SentimentStats (card: String) extends Actor {
 
   def recalculateFinalSentiment = {
     val lastSentiment = sentimentFinal
-    sentimentFinal = amounts.foldLeft(0f) { 
+    sentimentFinal = amounts.foldLeft(0d) { 
       case (sum, (sentiment, num)) => sentiment match {
         case "total" => sum
-        case "excellent" => sum + num * 2f
-        case "good" => sum + num * 1f
+        case "excellent" => sum + num * 2d
+        case "good" => sum + num * 1d
         case "neutral" => sum
-        case "bad" => sum + num * -1f
-        case "terrible" => sum + num * -2f
+        case "bad" => sum + num * -1d
+        case "terrible" => sum + num * -2d
       }
-    } / amounts("total") 
+    } / amounts("total")
     if (lastSentiment != sentimentFinal) {
       Argument((Scard(card, ""), sentimentFinal)) >>= Mongo.scards.updateSentimentFinal
       Actors.mediator ! Publish(s"$card:sentiment-final", SentimentUpdate(card, sentimentFinal))
@@ -105,7 +99,7 @@ class SentimentStats (card: String) extends Actor {
 
   def recalculateSentimentBars = {
     amounts - "total" map {
-      case (sentiment, num) => sentimentBars(sentiment) = num * 100f / amounts("total")
+      case (sentiment, num) => sentimentBars(sentiment) = num * 100d / amounts("total")
     }
     Argument((Scard(card, ""), sentimentBars)) >>= Mongo.scards.updateSentimentBars
     Actors.mediator ! Publish(s"$card:sentiment-bars", BarsUpdate(card, sentimentBars.toMap))

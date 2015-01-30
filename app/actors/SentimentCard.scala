@@ -6,8 +6,6 @@ package actors
 
 import akka.actor._
 
-case class Scard (id: String, name: String)
-
 /** Companion object with all the messages that involves 
  *  interaction with [[actors.SentimentCard]] actors.
  */
@@ -85,11 +83,16 @@ class SentimentCard (id: String, name: String) extends Actor {
   import Tinga.{
     EndOfCommentData}
 
+  val identity: Scard = Argument(Scard(id, name)) >>= Mongo.scards.getScard match {
+    case Result(scard) => scard
+    case _ => Scard(id, name)
+  }
+
   /** [[SentimentStats]] actor for this card. */
-  val stats: ActorRef  = context.actorOf(SentimentStats.props(id), s"$id:stats")
+  val stats: ActorRef  = context.actorOf(Props(new SentimentStats(id, identity)), s"$id:stats")
 
   /** [[Folksonomy]] actor for this card. */
-  val folksonomy: ActorRef = context.actorOf(Folksonomy.props(id), s"$id:folksonomy")
+  val folksonomy: ActorRef = context.actorOf(Props(new Folksonomy(id, identity)), s"$id:folksonomy")
 
   /** On creation publish it to the clients. */
   override def preStart () = Actors.mediator ! Publish("card-new", CardNew(id, name))

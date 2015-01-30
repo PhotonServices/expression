@@ -23,7 +23,7 @@ object Folksonomy {
 /** Mantains a rank of top words which are talked about
  *  in the comments of a sentiment card.
  */
-class Folksonomy (card: String) extends Actor {
+class Folksonomy (card: String, initData: Scard = Scard("", "")) extends Actor {
 
   import scalaz.Scalaz._
   import collection.mutable.Set
@@ -53,21 +53,25 @@ class Folksonomy (card: String) extends Actor {
   type Hits = Int
 
   /** The most n hitted words, ordered by sentiment or globally. */
-  val top = Map[Sentiment, Set[Word]](
-    "global" -> Set(),
-    "excellent" -> Set(),
-    "good" -> Set(),
-    "neutral" -> Set(),
-    "bad" -> Set(),
-    "terrible" -> Set())
-
+  /* Map[Sentiment, Set[Word]](
+   *   "global" -> Set(),
+   *   "excellent" -> Set(),
+   *   "good" -> Set(),
+   *   "neutral" -> Set(),
+   *   "bad" -> Set(),
+   *   "terrible" -> Set())
+   */
+  val top = initData.folksonomyTop
+  
   /** All the words which belong to a sentiment and their accumulation. */
-  val global = Map[Sentiment, collection.mutable.Map[Word, Hits]](
-    "excellent" -> collection.mutable.Map(),
-    "good" -> collection.mutable.Map(),
-    "neutral" -> collection.mutable.Map(),
-    "bad" -> collection.mutable.Map(),
-    "terrible" -> collection.mutable.Map())
+  /* Map[Sentiment, collection.mutable.Map[Word, Hits]](
+   *   "excellent" -> collection.mutable.Map(),
+   *   "good" -> collection.mutable.Map(),
+   *   "neutral" -> collection.mutable.Map(),
+   *   "bad" -> collection.mutable.Map(),
+   *   "terrible" -> collection.mutable.Map())
+   */
+  val global = initData.folksonomyGlobal
 
   /** Returns the global map but flattened to a simpler one with all the words of all the sentiments. */
   def flatGlobal: Map[Word, Hits] =
@@ -79,8 +83,10 @@ class Folksonomy (card: String) extends Actor {
       Actors.mediator ! Subscribe(s"client-subscription:$card:folksonomy-$sentiment:add", self)
     }
 
-  def addWord (word: Word, sentiment: Sentiment) =
+  def addWord (word: Word, sentiment: Sentiment) = {
     global(sentiment)(word) = global(sentiment).getOrElse(word, 0) + 1
+    Argument((card, sentiment, word, global(sentiment)(word))) >>= Mongo.scards.addWord
+  }
 
   /** Checks if a word should be promoted to the top hitted words of a sentiment. */
   def checkLocalPromotion (word: Word, sentiment: Sentiment) =
@@ -89,6 +95,7 @@ class Folksonomy (card: String) extends Actor {
     else if (!isTopLocal(word, sentiment) && global(sentiment)(word) > global(sentiment)(leastHittedLocal(sentiment))) {
       promoteLocal(word, sentiment)
       demoteLocal(leastHittedLocal(sentiment), sentiment)
+      Argument((card, sentiment, top(sentiment))) >>= Mongo.scards.setTopWordsForSentiment
     }
 
   /** Checks if a word should be promoted to the top hitted global words. */
@@ -98,6 +105,7 @@ class Folksonomy (card: String) extends Actor {
     else if (!isTopGlobal(word) && flatGlobal(word) > flatGlobal(leastHittedGlobal)) {
       promoteGlobal(word)
       demoteGlobal(leastHittedGlobal)
+      Argument((card, "global", top("global"))) >>= Mongo.scards.setTopWordsForSentiment
     }
 
   /** Returns the least hitted word from the top words of a sentiment. */

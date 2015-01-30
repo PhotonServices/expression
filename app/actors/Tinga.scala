@@ -32,7 +32,7 @@ class Tinga (receptor: ActorRef) extends Actor {
   val s = new Sentiment("es")
 
   /** Changes a float value to it's correspondent string form. */
-  def sentimentToString (sentiment: Float): String = sentiment match {
+  def sentimentToString (sentiment: Double): String = sentiment match {
     case 2.0 => "excellent"
     case 1.0 => "good"
     case 0.0 => "neutral"
@@ -46,7 +46,7 @@ class Tinga (receptor: ActorRef) extends Actor {
       buff foreach { case (sentence, sentiment, tag, intensity) =>
         if (tag == "sentiment") {
           val wordcloud = s.wordCloud(sentence).toList
-          val sentf = sentimentToString(sentiment.toFloat)
+          val sentf = sentimentToString(sentiment)
           receptor ! CommentData(sentf, wordcloud)
         }
       }
