@@ -27,8 +27,6 @@ object SentimentStats {
  */
 class SentimentStats (card: String, initData: Scard = Scard("", "")) extends Actor {
 
-  import collection.mutable.Map
-
   import akka.contrib.pattern.DistributedPubSubMediator.{
     Subscribe,
     Publish}
@@ -42,7 +40,7 @@ class SentimentStats (card: String, initData: Scard = Scard("", "")) extends Act
     AmountUpdate,
     BarsUpdate}
 
-  var sentimentFinal: Double = initData.sentimentFinal
+  var sentimentFinal = initData.sentimentFinal
 
   /**
    * Map(
@@ -52,7 +50,7 @@ class SentimentStats (card: String, initData: Scard = Scard("", "")) extends Act
    * "bad" -> 0d,
    * "terrible" -> 0d)
    */
-  val sentimentBars: Map[String, Double] = initData.sentimentBars
+  val sentimentBars = initData.sentimentBars
 
   /**
    *  Map(
@@ -63,7 +61,7 @@ class SentimentStats (card: String, initData: Scard = Scard("", "")) extends Act
    *  "bad" -> 0,
    *  "terrible" -> 0)
    */
-  val amounts: Map[String, Int] = initData.amounts
+  val amounts = initData.amounts
 
   override def preStart() = {
     Actors.mediator ! Subscribe(s"client-subscription:$card:sentiment-final", self)

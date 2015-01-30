@@ -48,10 +48,6 @@ class Folksonomy (card: String, initData: Scard = Scard("", "")) extends Actor {
     case None => throw new Exception("Expected 'sentiment.folksonomy.threshold' configuration option in the play framework configuration file.")
   }
 
-  type Sentiment = String
-  type Word = String
-  type Hits = Int
-
   /** The most n hitted words, ordered by sentiment or globally. */
   /* Map[Sentiment, Set[Word]](
    *   "global" -> Set(),

@@ -9,27 +9,27 @@ case class BadArguments (m: String) extends Exception(m)
 
 case class Scard (id: String, name: String,
   sentimentFinal: Double = 0d,
-  sentimentBars: Map[Sentiment, Double] = Map(
+  sentimentBars: collection.mutable.Map[Sentiment, Double] = Map(
     "excellent" -> 0d,
     "good" -> 0d,
     "neutral" -> 0d,
     "bad" -> 0d,
     "terrible" -> 0d),
-  amounts: Map[Sentiment, Int] = Map(
+  amounts: collection.mutable.Map[Sentiment, Int] = Map(
     "total" -> 0,
     "excellent" -> 0,
     "good" -> 0,
     "neutral" -> 0,
     "bad" -> 0,
     "terrible" -> 0),
-  folksonomyTop: Map[Sentiment, Set[Word]] = Map(
-    "global" -> Set.empty,
-    "excellent" -> Set.empty,
-    "good" -> Set.empty,
-    "neutral" -> Set.empty,
-    "bad" -> Set.empty,
-    "terrible" -> Set.empty),
-  folksonomyGlobal: Map[Sentiment, Map[Word, Hits]] = Map(
+  folksonomyTop: collection.immutable.Map[Sentiment, collection.mutable.Set[Word]] = collection.immutable.Map(
+    "global" -> collection.mutable.Set.empty,
+    "excellent" -> collection.mutable.Set.empty,
+    "good" -> collection.mutable.Set.empty,
+    "neutral" -> collection.mutable.Set.empty,
+    "bad" -> collection.mutable.Set.empty,
+    "terrible" -> collection.mutable.Set.empty),
+  folksonomyGlobal: collection.immutable.Map[Sentiment, collection.mutable.Map[Word, Hits]] = collection.immutable.Map(
     "excellent" -> Map.empty,
     "good" -> Map.empty,
     "neutral" -> Map.empty,
@@ -80,6 +80,8 @@ trait Collection {
 
 class ScardsCollection (val db: Option[MongoDB]) extends Collection {
 
+  type IMap[A, B] = collection.immutable.Map[A, B]
+
   val coll: MongoCollection = db match {
     case Some(db) => db("scards")
     case None => null
@@ -100,12 +102,12 @@ class ScardsCollection (val db: Option[MongoDB]) extends Collection {
       Result(coll.findOne(MongoDBObject("_id" -> empty.id)) match {
         case Some(scard) => Scard(empty.id, empty.name,
             sentimentFinal = scard.getAs[Double]("sentiment_final").get,
-            sentimentBars = scard.getAs[Map[Sentiment, Double]]("sentiment_bars").get,
-            amounts = scard.getAs[Map[Sentiment, Int]]("amounts").get,
-            folksonomyTop = scard.getAs[Map[Sentiment, com.mongodb.BasicDBList]]("folksonomy_top").get map { 
-              m => (m._1, (m._2 map { x => x.toString }).toSet)},
-            folksonomyGlobal = scard.getAs[Map[Sentiment, com.mongodb.BasicDBObject]]("folksonomy_global").get map {
-              m => (m._1, m._2 map {x => (x._1, x._2.asInstanceOf[Int]) })}
+            sentimentBars = Map(scard.getAs[IMap[Sentiment, Double]]("sentiment_bars").get.toSeq:_*),
+            amounts = Map(scard.getAs[IMap[Sentiment, Int]]("amounts").get.toSeq:_*),
+            folksonomyTop = scard.getAs[IMap[Sentiment, com.mongodb.BasicDBList]]("folksonomy_top").get map { 
+              m => (m._1, collection.mutable.Set((m._2 map { x => x.toString }).toSeq:_*))},
+            folksonomyGlobal = scard.getAs[IMap[Sentiment, com.mongodb.BasicDBObject]]("folksonomy_global").get map {
+              m => (m._1, Map((m._2 map {x => (x._1, x._2.asInstanceOf[Int]) }).toSeq:_*))}
           )
         case None => Scard(empty.id, empty.name)
       })
@@ -199,7 +201,7 @@ class ScardsCollection (val db: Option[MongoDB]) extends Collection {
       Result(Succeeded)
     }
 
-  def setTopWordsForSentiment (args: Tuple3[String, Sentiment, Set[Word]]): Query[Success, Unit] =
+  def setTopWordsForSentiment (args: Tuple3[String, Sentiment, collection.mutable.Set[Word]]): Query[Success, Unit] =
     if (coll == null) Result(Succeeded) else {
       coll.update(MongoDBObject("_id" -> args._1), $set("folksonomy_top."+args._2 -> args._3.toList))
       Result(Succeeded)
