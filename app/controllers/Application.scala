@@ -9,7 +9,7 @@ import actors.Actors
 import actors.WebSocketRouter
 import actors.WebSocketRouter.ClientIn
 import actors.WebSocketRouter.ClientOut
-import actors.Demoer.Commands
+import actors.Commands
 
 object Application extends Controller {
 

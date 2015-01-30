@@ -34,10 +34,6 @@ class SentimentAPIRequester (receptor: ActorRef) extends Actor {
   import play.api.libs.ws.ning.NingAsyncHttpClientConfigBuilder
   import scala.concurrent.Future
 
-  import SentimentCard.{
-    Comment,
-    CommentData}
-
   /** The url where the sentiment api resides, can be changed in the app configuration,
    * at /conf/application.conf with the attribute 'sentiment.service'.
    */

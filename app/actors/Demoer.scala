@@ -8,12 +8,6 @@ import akka.actor._
 
 object Demoer {
 
-  case class Commands (cmds: Array[String])
-
-  case class ScheduleNewCard (name: String)
-
-  case class ScheduleComment (card: String, cmt: String)
-
   def props: Props = Props(new Demoer)
 }
 
@@ -43,19 +37,6 @@ class Demoer extends Actor {
   import scala.collection.mutable.Map
   import scala.concurrent.duration._
   import context.dispatcher
-
-  import Demoer.{
-    Commands}
-
-  import akka.contrib.pattern.DistributedPubSubMediator.{
-    Subscribe}
-
-  import Demoer.{
-    ScheduleNewCard,
-    ScheduleComment}
-
-  import SentimentCard.{
-    Comment}
 
   val scheduler = context.system.scheduler
 

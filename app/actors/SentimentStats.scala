@@ -11,14 +11,6 @@ import akka.actor._
  */
 object SentimentStats {
 
-  case class Sentiment (sentiment: String) 
-
-  case class AmountUpdate (card: String, sentiment: String, amounts: Int)
-
-  case class SentimentUpdate (card: String, value: Double)
-
-  case class BarsUpdate (card: String, sentimentBars: Map[String, Double])
-
   def props (card: String): Props = Props(new SentimentStats(card))
 }
 
@@ -26,19 +18,6 @@ object SentimentStats {
  *  a sentiment card.
  */
 class SentimentStats (card: String, initData: Scard = Scard("", "")) extends Actor {
-
-  import akka.contrib.pattern.DistributedPubSubMediator.{
-    Subscribe,
-    Publish}
-
-  import WebSocketRouter.{
-    ClientSubscription}
-
-  import SentimentStats.{
-    Sentiment,
-    SentimentUpdate,
-    AmountUpdate,
-    BarsUpdate}
 
   var sentimentFinal = initData.sentimentFinal
 
@@ -108,7 +87,7 @@ class SentimentStats (card: String, initData: Scard = Scard("", "")) extends Act
   val SentimentRegExp = """.*count-(excellent|good|neutral|bad|terrible|total)""".r
 
   def receive = {
-    case Sentiment(sentiment) => 
+    case SentimentMsg(sentiment) => 
       recalculateSentimentAmount("total")
       recalculateSentimentAmount(sentiment)
       recalculateSentimentBars

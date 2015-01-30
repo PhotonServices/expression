@@ -11,12 +11,6 @@ import akka.actor._
  */
 object Folksonomy {
 
-  /** Message to add a word to this folksonomy. */
-  case class FolksonomyWord (sentiment: String, word: String)
-
-  /** Message to inform the client about a change in the folksonomy. */
-  case class FolksonomyUpdate (card: String, sentiment: String, action: String, word: String)
-
   def props (card: String): Props = Props(new Folksonomy(card))
 }
 
@@ -28,17 +22,6 @@ class Folksonomy (card: String, initData: Scard = Scard("", "")) extends Actor {
   import scalaz.Scalaz._
   import collection.mutable.Set
   import play.api.Play.current
-
-  import akka.contrib.pattern.DistributedPubSubMediator.{
-    Subscribe,
-    Publish}
-
-  import WebSocketRouter.{
-    ClientSubscription}
-
-  import Folksonomy.{
-    FolksonomyUpdate,
-    FolksonomyWord}
 
   /** The threshold of the top words, can be configured in
    * /conf/application.conf with the attribute 'sentiment.folksonomy.threshold'

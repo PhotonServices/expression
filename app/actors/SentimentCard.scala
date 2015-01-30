@@ -11,12 +11,6 @@ import akka.actor._
  */
 object SentimentCard {
 
-  /** Message to move a comment between actors. */
-  case class Comment (comment: String)
-
-  /** Message to move a processed comment data between actors. */
-  case class CommentData (sentiment: String, folksonomies: List[String])
-
   def props (id: String, name: String): Props = 
     Props(new SentimentCard(id: String, name: String))
 }
@@ -58,31 +52,6 @@ object SentimentCard {
  */
 class SentimentCard (id: String, name: String) extends Actor {
 
-  import akka.contrib.pattern.DistributedPubSubMediator.Publish
-
-  import akka.actor.{
-    PoisonPill}
-
-  import WebSocketRouter.{
-    ClientSubscription}
-
-  import SentimentCardsManager.{
-    CardNew,
-    CardDelete}
-
-  import SentimentCard.{
-    Comment,
-    CommentData}
-
-  import SentimentStats.{
-    Sentiment}
-
-  import Folksonomy.{
-    FolksonomyWord}
-
-  import Tinga.{
-    EndOfCommentData}
-
   val identity: Scard = Argument(Scard(id, name)) >>= Mongo.scards.getScard match {
     case Result(scard) => scard
     case _ => Scard(id, name)
@@ -108,7 +77,7 @@ class SentimentCard (id: String, name: String) extends Actor {
     //context.actorOf(SentimentAPIRequester.props(self), genId).forward(comment)
 
   def processSentiment (sentiment: String) =
-    stats ! Sentiment(sentiment)
+    stats ! SentimentMsg(sentiment)
 
   def processFolksonomy (sentiment: String, folklist: List[String]) =
     folklist foreach { word => folksonomy ! FolksonomyWord(sentiment, word) }
@@ -124,7 +93,7 @@ class SentimentCard (id: String, name: String) extends Actor {
       //sender ! PoisonPill
 
     case EndOfCommentData =>
-      sender ! PoisonPill
+      sender ! akka.actor.PoisonPill
 
     case ClientSubscription(event, socket) =>
       socket ! CardNew(id, name)

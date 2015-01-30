@@ -9,8 +9,6 @@ import akka.actor._
 /** Companion object with a Props builder for this actor. */
 object Tinga {
 
-  case object EndOfCommentData
-
   /** Constructor for [[SentimentAPIRequester]] actor props. */
   def props (receptor: ActorRef): Props = 
     Props(new Tinga(receptor: ActorRef))
@@ -21,13 +19,6 @@ object Tinga {
 class Tinga (receptor: ActorRef) extends Actor {
 
   import tinga.sentiment._
-
-  import Tinga.{
-    EndOfCommentData}
-
-  import SentimentCard.{
-    Comment,
-    CommentData}
 
   val s = new Sentiment("es")
 

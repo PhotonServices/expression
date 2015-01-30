@@ -11,14 +11,6 @@ import akka.actor._
  */
 object SentimentCardsManager {
 
-  /** Message to create a new sentiment card. */
-  case class CardNew (id: String, name: String)
-
-  /** Message to delete an existing sentiment card. */
-  case class CardDelete (id: String)
-
-  case object Wake
-
   /** Constructor for [[SentimentCardsManager]] actor props. 
    *
    * @return Props of SentimentCardsManager. 
@@ -38,21 +30,6 @@ object SentimentCardsManager {
 class SentimentCardsManager extends Actor with ActorLogging {
 
   import collection.mutable.Map
-
-  import akka.contrib.pattern.DistributedPubSubMediator.{
-    Publish,
-    Subscribe}
-
-  import akka.actor.{
-    PoisonPill}
-
-  import SentimentCardsManager.{
-    CardNew,
-    CardDelete,
-    Wake}
-
-  import WebSocketRouter.{
-    ClientSubscription}
 
   val cards = Map[String, ActorRef]()
 
@@ -81,7 +58,7 @@ class SentimentCardsManager extends Actor with ActorLogging {
 
   def deleteSentimentCard (id: String) = context.child(id) match {
     case Some(child) => 
-      child ! PoisonPill
+      child ! akka.actor.PoisonPill
       cards -= id
     case None => log.info("Tried to kill {} card but was already dead.", id)
   }

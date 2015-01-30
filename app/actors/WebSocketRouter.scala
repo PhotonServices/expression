@@ -10,7 +10,7 @@ import play.api.libs.json._
 import play.api.libs.functional.syntax._
 import play.api.mvc.WebSocket.FrameFormatter
 
-/** Companion of [[WebSocketRouter]] with the messages to interact with the actor and the constructor. */
+/** Companion of [[WebSocketRouter]] with the messages to interact with the actor and the constructor. */
 object WebSocketRouter {
 
   /** Message to be enrouted by the [[WebSocketRouter]]. */
@@ -19,19 +19,13 @@ object WebSocketRouter {
   /** Message to be delivered to the web socket client. */
   case class ClientOut (event: String, data: JsValue)
 
-  /** Message to test the event mediator. */
-  case class TestEvent (data: String)
-
-  /** Message to catch client subscriptions. */
-  case class ClientSubscription (event: String, socket: ActorRef)
-
-  /** [[ClientIn]] companion which holds the formaters needed to convert from json. */
+  /** [[ClientIn]] companion which holds the formaters needed to convert from json. */
   object ClientIn {
     implicit val messageFormater = Json.format[ClientIn]
     implicit val messageFrameFormater = FrameFormatter.jsonFrame[ClientIn]
   }
 
-  /** [[ClientOut]] companion which holds the formaters needed to convert to json. 
+  /** [[ClientOut]] companion which holds the formaters needed to convert to json. 
    *
    * This message is used to publish events by other actors to be sent to the client.
    */
@@ -57,7 +51,7 @@ object WebSocketRouter {
  *
  *  Each time the client subscribes to an event this actor also publishes
  *  an other event with this format 'client-subscription:<event-name>',
- *  publishing an [[actors.WebSocketRouter.ClientSubscription]] message.
+ *  publishing an [[actors.WebSocketRouter.ClientSubscription]] message.
  *  this way other actors can be informed about clients subscribing to events,
  *  so that the actors can push their most recent state.
  *
@@ -67,34 +61,7 @@ class WebSocketRouter (out: ActorRef) extends Actor {
 
   import context.dispatcher
   import scala.concurrent.duration._
-
-  import akka.contrib.pattern.DistributedPubSubMediator.{
-    Subscribe,
-    SubscribeAck,
-    Unsubscribe,
-    UnsubscribeAck,
-    Publish}
-
-  import WebSocketRouter.{
-    ClientIn, 
-    ClientOut,
-    TestEvent,
-    ClientSubscription}
-
-  import SentimentCardsManager.{
-    CardNew,
-    CardDelete}
-
-  import SentimentCard.{
-    Comment}
-
-  import SentimentStats.{
-    SentimentUpdate,
-    AmountUpdate,
-    BarsUpdate}
-
-  import Folksonomy.{
-    FolksonomyUpdate}
+  import WebSocketRouter.{ClientIn, ClientOut}
 
   /** Regular expression. */
   val ChildCardPattern = "^(.*)/(.*)".r
