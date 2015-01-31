@@ -51,7 +51,7 @@ object WebSocketRouter {
  *
  *  Each time the client subscribes to an event this actor also publishes
  *  an other event with this format 'client-subscription:<event-name>',
- *  publishing an [[actors.WebSocketRouter.ClientSubscription]] message.
+ *  publishing an [[actors.ClientSubscription]] message.
  *  this way other actors can be informed about clients subscribing to events,
  *  so that the actors can push their most recent state.
  *

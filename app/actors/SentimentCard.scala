@@ -24,7 +24,7 @@ object SentimentCard {
  *
  *  The complete work flow:
  *
- *  (1) This [[actors.SentimentCard]] receives an [[actors.SentimentCard.Comment]]
+ *  (1) This [[actors.SentimentCard]] receives an [[actors.Comment]]
  *  message, which is redirected to a newly born [[actors.SentimentAPIRequester]]
  *  actor.
  *
@@ -33,7 +33,7 @@ object SentimentCard {
  *
  *  (3) The SentimentAPIRequester receives the processed comment,
  *  formats it and sends it back to this SentimentCard using a
- *  [[actors.SentimentCard.CommentData]] message.
+ *  [[actors.CommentData]] message.
  *
  *  (4) This SentimentCard destroys the api requester and redirects
  *  the data to it's children.
@@ -44,10 +44,10 @@ object SentimentCard {
  *  so that they receive updates on the semantic characteristics of
  *  the sentiment card.
  *
- *  This actor also receives redirections of [[actors.WebSocketRouter.ClientSubscription]]
+ *  This actor also receives redirections of [[actors.ClientSubscription]]
  *  messages, which notify that a client through a web socket subscribed
  *  to the 'new-card' event, when notified this card pushes his information
- *  through a [[actors.SentimentCardsManager.CardNew]] message to the 
+ *  through a [[actors.CardNew]] message to the 
  *  subscribed socket.
  */
 class SentimentCard (id: String, name: String) extends Actor {

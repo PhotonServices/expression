@@ -17,12 +17,12 @@ object SentimentAPIRequester {
 /** Supervised by [[actors.SentimentCard]], used to manage an http
  *  request to the sentiment restful api.
  *
- *  When an [[actors.SentimentCard.Comment]] message is received it 
+ *  When an [[actors.Comment]] message is received it 
  *  inits an http request using play's [[https://www.playframework.com/documentation/2.3.x/ScalaWS WS]]
  *  library.
  *
  *  When the service responds, it formats the response and sends an
- *  [[actors.SentimentCard.CommentData]] message back to it's sentiment
+ *  [[actors.CommentData]] message back to it's sentiment
  *  card supervisor, which will kill him after that.
  */
 class SentimentAPIRequester (receptor: ActorRef) extends Actor {

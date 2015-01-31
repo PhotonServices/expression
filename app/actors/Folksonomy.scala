@@ -133,7 +133,7 @@ class Folksonomy (card: String, initData: Scard = Scard("", "")) extends Actor {
     sendUpdate("remove", word, "global")
   }
 
-  /** Builds a [[actors.Folksonomy.FolksonomyUpdate]] message and publishs it. */
+  /** Builds a [[actors.FolksonomyUpdate]] message and publishs it. */
   def sendUpdate(action: String, word: Word, sentiment: Sentiment) =
     Actors.mediator ! Publish(s"$card:folksonomy-$sentiment:$action", FolksonomyUpdate(card, sentiment, action, word))
 
