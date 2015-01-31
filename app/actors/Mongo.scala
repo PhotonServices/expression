@@ -35,8 +35,17 @@ case class Scard (id: String, name: String,
     "neutral" -> Map.empty,
     "bad" -> Map.empty,
     "terrible" -> Map.empty)
-  )
+)
 
+case class CommentArchive (
+  scardID: String,
+  scardName: String,
+  comment: String,
+  sentiment: String,
+  intensity: Int,
+  wordCloud: List[String],
+  timestamp: Long = System.currentTimeMillis
+)
 
 object Mongo {
   
@@ -219,6 +228,21 @@ class CommentsCollection (val db: Option[MongoDB]) extends Collection {
     case Some(db) => db("comments")
     case None => null
   }
+
+  def archive (cmt: CommentArchive): Query[Success, Unit] =
+    if (coll == null) Result(Succeeded) else {
+      coll.insert(MongoDBObject(
+        "_id" -> cmt.scardID,
+        "scard_id" -> cmt.scardID,
+        "scard_name" -> cmt.scardName,
+        "comment" -> cmt.comment,
+        "sentiment" -> cmt.sentiment,
+        "intensity" -> cmt.intensity,
+        "word_cloud" -> cmt.wordCloud,
+        "timestamp" -> cmt.timestamp
+      ))
+      Result(Succeeded)
+    }
 }
 
 /**

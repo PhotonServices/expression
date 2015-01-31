@@ -16,7 +16,7 @@ object Tinga {
 
 /** Supervised by [[actors.SentimentCard]], used compute sentiment analysis
  */
-class Tinga (receptor: ActorRef) extends Actor {
+class Tinga (receptor: ActorRef, initData: Scard = Scard("", "")) extends Actor {
 
   import tinga.sentiment._
 
@@ -38,10 +38,10 @@ class Tinga (receptor: ActorRef) extends Actor {
         if (tag == "sentiment") {
           val wordcloud = s.wordCloud(sentence).toList
           val sentf = sentimentToString(sentiment)
+          Argument(CommentArchive(initData.id, initData.name, sentence, sentf, intensity, wordcloud)) >>= Mongo.comments.archive
           receptor ! CommentData(sentf, wordcloud)
         }
       }
       receptor ! EndOfCommentData
   }
 }
-
