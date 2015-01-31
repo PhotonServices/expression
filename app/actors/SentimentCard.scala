@@ -73,7 +73,7 @@ class SentimentCard (id: String, name: String) extends Actor {
 
   /** Creates a new [[SentimentAPIRequester]] actor to delegate the processing of a comment. */
   def processComment (comment: Comment) =
-    context.actorOf(Tinga.props(self), genId).forward(comment)
+    context.actorOf(Props(new Tinga(self, identity)), genId).forward(comment)
     //context.actorOf(SentimentAPIRequester.props(self), genId).forward(comment)
 
   def processSentiment (sentiment: String) =

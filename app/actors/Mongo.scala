@@ -138,6 +138,7 @@ class ScardsCollection (val db: Option[MongoDB]) extends Collection {
         "amounts" -> MongoDBObject(
           "total" -> 0,
           "excellent" -> 0,
+          "good" -> 0,
           "neutral" -> 0,
           "bad" -> 0,
           "terrible" -> 0
@@ -232,7 +233,6 @@ class CommentsCollection (val db: Option[MongoDB]) extends Collection {
   def archive (cmt: CommentArchive): Query[Success, Unit] =
     if (coll == null) Result(Succeeded) else {
       coll.insert(MongoDBObject(
-        "_id" -> cmt.scardID,
         "scard_id" -> cmt.scardID,
         "scard_name" -> cmt.scardName,
         "comment" -> cmt.comment,
