@@ -33,7 +33,25 @@ db.scards [
       bad: { "word1": 12, "word2": 10 ... },
       terrible: { "word1": 12, "word2": 10 ... } 
     }
-  }
+  },
+.
+.
+.
+]
+
+db.comments [
+  {
+    _id: "string",
+    scard_id: "string",
+    scard_name: "string", 
+    related_comments_id: "string",
+    sequence: 0,
+    comment: "string",
+    sentiment: "string",
+    intensity: 0,
+    word_cloud: ["string"],
+    timestamp: 12384812315123
+  },
 .
 .
 .
